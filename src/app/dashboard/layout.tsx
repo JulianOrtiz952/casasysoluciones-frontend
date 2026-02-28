@@ -1,0 +1,68 @@
+import Link from 'next/link';
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="flex font-sans h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors">
+            {/* Sidebar */}
+            <aside className="w-64 bg-slate-900 border-r border-slate-800 dark:border-slate-800 hidden md:flex flex-col shrink-0 transition-colors">
+                <div className="h-16 flex items-center px-6 border-b border-slate-800">
+                    <svg className="w-6 h-6 text-rose-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span className="text-white font-bold text-lg tracking-wide">Inmobiliaria VS</span>
+                </div>
+
+                <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                    <Link href="/dashboard" className="flex items-center space-x-3 px-3 py-2.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg font-medium transition">
+                        <svg className="w-5 h-5 empty:hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                        <span>Resumen</span>
+                    </Link>
+                    <Link href="/dashboard/inmuebles/nuevo" className="flex items-center space-x-3 px-3 py-2.5 bg-rose-500/20 text-rose-400 rounded-lg font-medium transition border border-rose-500/30">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Registrar Inmueble</span>
+                    </Link>
+                    <div className="h-px bg-slate-800 my-4"></div>
+                    <Link href="/dashboard/inmuebles" className="flex items-center space-x-3 px-3 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <span>Ver Catálogo</span>
+                    </Link>
+                    <Link href="/dashboard/inquilinos" className="flex items-center space-x-3 px-3 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span>Inquilinos</span>
+                    </Link>
+                </nav>
+
+                <div className="p-4 border-t border-slate-800">
+                    <Link href="/" className="flex items-center space-x-3 text-sm text-slate-400 hover:text-rose-400 transition">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                        <span>Cerrar sesión</span>
+                    </Link>
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
+                <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between px-6 z-10 transition-colors">
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-white">Panel de Administración</h2>
+                    <div className="flex items-center gap-4">
+                        <div className="w-9 h-9 rounded-full bg-rose-50 dark:bg-slate-800 flex items-center justify-center text-rose-500 dark:text-rose-400 font-bold border border-rose-200 dark:border-slate-700 shadow-sm">
+                            A
+                        </div>
+                    </div>
+                </header>
+
+                <main className="flex-1 overflow-auto p-6 md:p-8 relative">
+                    {children}
+                </main>
+            </div>
+        </div>
+    );
+}
