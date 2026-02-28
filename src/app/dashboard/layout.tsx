@@ -1,6 +1,35 @@
+'use client';
+
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+
+// Decodificador manual de JWT idéntico al que usamos
+function parseJwt(token: string) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        return null;
+    }
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+    const [rolActual, setRolActual] = useState('SUPER'); // Prevenimos salto visual brusco
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            const decoded = parseJwt(token);
+            if (decoded && decoded.rol) {
+                setRolActual(decoded.rol);
+            }
+        }
+    }, []);
+
     return (
         <div className="flex font-sans h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors">
             {/* Sidebar */}
@@ -38,6 +67,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </svg>
                         <span>Inquilinos</span>
                     </Link>
+
+                    {rolActual === 'SUPER' && (
+                        <Link href="/dashboard/usuarios" className="flex items-center space-x-3 px-3 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <span>Usuarios (Admin)</span>
+                        </Link>
+                    )}
+
                     <Link href="/dashboard/calculadora" className="flex items-center space-x-3 px-3 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />

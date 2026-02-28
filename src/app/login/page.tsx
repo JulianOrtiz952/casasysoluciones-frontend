@@ -2,9 +2,40 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function LoginPage() {
     const router = useRouter();
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrorMsg('');
+        setLoading(true);
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1/'}token/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem('token', data.access);
+                localStorage.setItem('refreshToken', data.refresh);
+                router.push('/dashboard');
+            } else {
+                setErrorMsg('Usuario o contraseña incorrectos');
+            }
+        } catch (error) {
+            setErrorMsg('Fallo de conexión con el servidor');
+        }
+        setLoading(false);
+    };
 
     return (
         <main className="min-h-screen flex items-center justify-center bg-rose-50 dark:bg-slate-950 font-sans p-4 relative overflow-hidden transition-colors duration-300">
@@ -23,7 +54,13 @@ export default function LoginPage() {
                     <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm">Gestiona tus propiedades</p>
                 </div>
 
-                <form className="space-y-6">
+                {errorMsg && (
+                    <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-lg p-3 text-center mb-6 text-sm font-medium">
+                        {errorMsg}
+                    </div>
+                )}
+
+                <form onSubmit={handleLogin} className="space-y-6">
                     <div className="space-y-2 group">
                         <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300 uppercase">
                             Usuario
@@ -32,6 +69,8 @@ export default function LoginPage() {
                             <input
                                 type="text"
                                 placeholder="ej. admin"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
                                 className="w-full px-5 py-3.5 bg-rose-50/50 dark:bg-slate-800 border border-rose-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white text-slate-800 transition-all shadow-sm"
                             />
                         </div>
@@ -45,6 +84,8 @@ export default function LoginPage() {
                             <input
                                 type="password"
                                 placeholder="********"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 className="w-full px-5 py-3.5 bg-rose-50/50 dark:bg-slate-800 border border-rose-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white text-slate-800 transition-all shadow-sm"
                             />
                         </div>
@@ -52,11 +93,11 @@ export default function LoginPage() {
 
                     <div className="pt-2">
                         <button
-                            type="button"
-                            onClick={() => router.push('/dashboard')}
-                            className="w-full bg-rose-500 text-white font-semibold rounded-xl py-3.5 shadow-lg shadow-rose-500/30 hover:bg-rose-600 transition-all duration-300 hover:-translate-y-1 active:scale-[0.98]"
+                            type="submit"
+                            disabled={loading}
+                            className={`w-full text-white font-semibold rounded-xl py-3.5 shadow-lg transition-all duration-300 ${loading ? 'bg-slate-400 cursor-not-allowed' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/30 hover:-translate-y-1 active:scale-[0.98]'}`}
                         >
-                            Ingresar
+                            {loading ? 'Ingresando...' : 'Ingresar'}
                         </button>
                     </div>
                 </form>
