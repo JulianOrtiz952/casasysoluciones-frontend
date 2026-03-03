@@ -5,11 +5,31 @@ import Link from 'next/link';
 
 export default function CalculadoraArriendos() {
     const [modo, setModo] = useState<'normal' | 'inverso'>('normal');
-    const [monto, setMonto] = useState<number | ''>(1000000);
+    const [monto, setMonto] = useState<string>("1'000,000");
     const [aplicaAseguradora, setAplicaAseguradora] = useState<boolean>(false);
     const [aplicaIvaArrendatario, setAplicaIvaArrendatario] = useState<boolean>(false);
 
-    const montoNumber = typeof monto === 'number' ? monto : 0;
+    const montoNumber = Number(monto.replace(/['',]/g, '')) || 0;
+
+    const handleMontoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value.replace(/[^0-9]/g, '');
+        if (!rawValue) {
+            setMonto('');
+            return;
+        }
+        let formatted = rawValue;
+        if (rawValue.length > 6) {
+            const millions = rawValue.slice(0, -6).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            const thousands = rawValue.slice(-6, -3);
+            const hundreds = rawValue.slice(-3);
+            formatted = `${millions}'${thousands},${hundreds}`;
+        } else if (rawValue.length > 3) {
+            const thousands = rawValue.slice(0, -3);
+            const hundreds = rawValue.slice(-3);
+            formatted = `${thousands},${hundreds}`;
+        }
+        setMonto(formatted);
+    };
 
     // Calcular factor de descuentos (10% + 1.9% IVA = 11.9% fijo) y aseguradora si aplica
     const factorDescuento = 0.119 + (aplicaAseguradora ? 0.0238 : 0);
@@ -70,11 +90,11 @@ export default function CalculadoraArriendos() {
                         <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
                             <input
-                                type="number"
+                                type="text"
                                 value={monto}
-                                onChange={(e) => setMonto(e.target.value === '' ? '' : Number(e.target.value))}
+                                onChange={handleMontoChange}
                                 className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all text-lg font-bold"
-                                placeholder="1000000"
+                                placeholder="1'000,000"
                             />
                         </div>
                     </div>

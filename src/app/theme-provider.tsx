@@ -10,7 +10,7 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setTheme] = useState<'light' | 'dark'>('dark'); // Por defecto oscuro, como pediste
+    const [theme, setTheme] = useState<'light' | 'dark'>('light'); // Por defecto claro
 
     useEffect(() => {
         // Al cargar la página, recuperar del local storage
@@ -19,7 +19,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             setTheme(savedTheme);
             document.documentElement.classList.toggle('dark', savedTheme === 'dark');
         } else {
-            document.documentElement.classList.add('dark'); // dark base value
+            document.documentElement.classList.remove('dark'); // light base value
         }
     }, []);
 

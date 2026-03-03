@@ -81,6 +81,26 @@ export default function NuevoInmueble() {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+        if (name === 'precio') {
+            const rawValue = value.replace(/[^0-9]/g, '');
+            if (!rawValue) {
+                setFormData(prev => ({ ...prev, [name]: '' }));
+                return;
+            }
+            let formatted = rawValue;
+            if (rawValue.length > 6) {
+                const millions = rawValue.slice(0, -6).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                const thousands = rawValue.slice(-6, -3);
+                const hundreds = rawValue.slice(-3);
+                formatted = `${millions}'${thousands},${hundreds}`;
+            } else if (rawValue.length > 3) {
+                const thousands = rawValue.slice(0, -3);
+                const hundreds = rawValue.slice(-3);
+                formatted = `${thousands},${hundreds}`;
+            }
+            setFormData(prev => ({ ...prev, [name]: formatted }));
+            return;
+        }
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -91,7 +111,7 @@ export default function NuevoInmueble() {
         try {
             const data = new FormData();
             data.append('titulo', formData.titulo);
-            data.append('precio', formData.precio);
+            data.append('precio', formData.precio.replace(/['',]/g, ''));
             data.append('direccion', formData.direccion);
             data.append('descripcion', formData.descripcion);
             data.append('estado', formData.estado);
@@ -144,7 +164,7 @@ export default function NuevoInmueble() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Precio Mensual ($)</label>
-                            <input name="precio" value={formData.precio} onChange={handleInputChange} type="number" required placeholder="0.00" step="0.01" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
+                            <input name="precio" value={formData.precio} onChange={handleInputChange} type="text" required placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
                         </div>
                     </div>
 

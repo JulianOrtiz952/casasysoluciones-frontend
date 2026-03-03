@@ -52,10 +52,24 @@ export default function EditarInmueble() {
                 const resInm = await fetch(`${API_URL}/api/v1/inmuebles/${id}/`);
                 if (resInm.ok) {
                     const data = await resInm.json();
+
+                    const rawValue = String(data.precio || '').replace(/[^0-9]/g, '');
+                    let formattedPrecio = rawValue;
+                    if (rawValue.length > 6) {
+                        const millions = rawValue.slice(0, -6).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                        const thousands = rawValue.slice(-6, -3);
+                        const hundreds = rawValue.slice(-3);
+                        formattedPrecio = `${millions}'${thousands},${hundreds}`;
+                    } else if (rawValue.length > 3) {
+                        const thousands = rawValue.slice(0, -3);
+                        const hundreds = rawValue.slice(-3);
+                        formattedPrecio = `${thousands},${hundreds}`;
+                    }
+
                     setFormData(prev => ({
                         ...prev,
                         titulo: data.titulo,
-                        precio: data.precio,
+                        precio: formattedPrecio,
                         direccion: data.direccion,
                         descripcion: data.descripcion,
                         estado: data.estado
@@ -117,6 +131,26 @@ export default function EditarInmueble() {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+        if (name === 'precio') {
+            const rawValue = value.replace(/[^0-9]/g, '');
+            if (!rawValue) {
+                setFormData(prev => ({ ...prev, [name]: '' }));
+                return;
+            }
+            let formatted = rawValue;
+            if (rawValue.length > 6) {
+                const millions = rawValue.slice(0, -6).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                const thousands = rawValue.slice(-6, -3);
+                const hundreds = rawValue.slice(-3);
+                formatted = `${millions}'${thousands},${hundreds}`;
+            } else if (rawValue.length > 3) {
+                const thousands = rawValue.slice(0, -3);
+                const hundreds = rawValue.slice(-3);
+                formatted = `${thousands},${hundreds}`;
+            }
+            setFormData(prev => ({ ...prev, [name]: formatted }));
+            return;
+        }
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -133,7 +167,7 @@ export default function EditarInmueble() {
         try {
             const data = new FormData();
             data.append('titulo', formData.titulo);
-            data.append('precio', formData.precio);
+            data.append('precio', formData.precio.replace(/['',]/g, ''));
             data.append('direccion', formData.direccion);
             data.append('descripcion', formData.descripcion);
             data.append('estado', formData.estado);
@@ -210,7 +244,7 @@ export default function EditarInmueble() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Precio Mensual ($)</label>
-                            <input name="precio" value={formData.precio} onChange={handleInputChange} type="number" step="0.01" required className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
+                            <input name="precio" value={formData.precio} onChange={handleInputChange} type="text" placeholder="0" required className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
                         </div>
                     </div>
 
