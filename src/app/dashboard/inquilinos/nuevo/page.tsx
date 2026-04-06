@@ -64,32 +64,32 @@ export default function NuevoInquilino() {
             <div className="bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 rounded-3xl p-8 transition-colors">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Nombre Completo</label>
-                            <input name="nombre" value={formData.nombre} onChange={handleInputChange} type="text" required placeholder="Ej. Juan Pérez" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Nombre Completo</label>
+                            <input name="nombre" value={formData.nombre} onChange={handleInputChange} type="text" required placeholder="Ej. Juan Pérez" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Nº de Identificación</label>
-                            <input name="identificacion" value={formData.identificacion} onChange={handleInputChange} type="text" required placeholder="Cédula, DNI, Pasaporte..." className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Nº de Identificación</label>
+                            <input name="identificacion" value={formData.identificacion} onChange={handleInputChange} type="text" required placeholder="Cédula, DNI, Pasaporte..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Correo Electrónico</label>
-                            <input name="email" value={formData.email} onChange={handleInputChange} type="email" required placeholder="correo@ejemplo.com" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Correo Electrónico</label>
+                            <input name="email" value={formData.email} onChange={handleInputChange} type="email" required placeholder="correo@ejemplo.com" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Teléfono Celular</label>
-                            <input name="telefono" value={formData.telefono} onChange={handleInputChange} type="text" required placeholder="+57 321 000 0000" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Teléfono Celular</label>
+                            <input name="telefono" value={formData.telefono} onChange={handleInputChange} type="text" required placeholder="+57 321 000 0000" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
                         </div>
                     </div>
 
-                    <div className="pt-4 flex justify-end gap-3">
-                        <Link href="/dashboard/inquilinos" className="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    <div className="pt-8 border-t border-slate-100 dark:border-slate-800 mt-8 flex justify-end gap-3">
+                        <Link href="/dashboard/inquilinos" className="px-6 py-3 bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition text-sm">
                             Cancelar
                         </Link>
-                        <button disabled={loading} type="submit" className="px-6 py-3 bg-rose-500 text-white font-semibold rounded-xl hover:bg-rose-600 transition shadow-lg shadow-rose-500/30 flex items-center gap-2">
+                        <button disabled={loading} type="submit" className="px-8 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white font-bold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] flex items-center gap-2 active:scale-95 text-sm">
                             {loading ? 'Guardando...' : 'Guardar Inquilino'}
                         </button>
                     </div>

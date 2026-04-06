@@ -19,6 +19,16 @@ interface Inmueble {
     imagen: string | null;
     imagenes?: Imagen[];
     estado: 'arrendada' | 'en_oferta' | 'en_mantenimiento' | 'inactiva';
+    en_conjunto?: boolean;
+    administracion_incluida?: boolean;
+    valor_administracion?: string;
+    habitaciones?: number | null;
+    banos?: number | null;
+    salas?: number | null;
+    cocinas?: number | null;
+    garajes?: number | null;
+    es_comercial?: boolean;
+    enlace_google_maps?: string | null;
 }
 
 export default function PublicInmuebleDetail() {
@@ -98,10 +108,10 @@ export default function PublicInmuebleDetail() {
                 </div>
             </header>
 
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
-                <div className="bg-white dark:bg-slate-900 shadow-xl rounded-3xl overflow-hidden border border-rose-100 dark:border-slate-800">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+                <div className="bg-white dark:bg-slate-900 shadow-xl rounded-3xl border border-slate-200 dark:border-slate-800 relative z-10 w-full mb-10">
                     {/* Imagen Header */}
-                    <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] relative bg-slate-100 dark:bg-slate-800 group">
+                    <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] relative bg-slate-100 dark:bg-slate-800 group rounded-t-3xl overflow-hidden">
                         {images.length > 0 ? (
                             <img src={images[currentImageIdx]} alt={inmueble.titulo} className="w-full h-full object-cover transition-opacity duration-500" />
                         ) : (
@@ -146,28 +156,126 @@ export default function PublicInmuebleDetail() {
                         )}
                     </div>
 
-                    {/* Contenido */}
+                    {/* Contenido principal en dos columnas (PC) */}
                     <div className="p-8 sm:p-12">
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-6">
-                            <div className="flex-1">
-                                <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white mb-2">{inmueble.titulo}</h1>
-                                <p className="text-lg text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                    {inmueble.direccion}
+                        <div className="flex flex-col lg:flex-row gap-12 relative">
+                            {/* Columna Izquierda: Toda la info */}
+                            <div className="flex-1 min-w-0">
+                                <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white mb-4 leading-tight">{inmueble.titulo}</h1>
+                                <p className="text-lg text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-10">
+                                    <svg className="w-5 h-5 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                    {inmueble.direccion.match(/^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)/)
+                                        ? "Ubicación sugerida desde Mapa"
+                                        : inmueble.direccion}
                                 </p>
-                            </div>
-                            <div className="md:text-right bg-rose-50 dark:bg-slate-800 p-6 rounded-2xl w-full md:w-auto self-start border border-rose-100 dark:border-slate-700">
-                                <p className="text-sm font-semibold uppercase tracking-wider text-rose-500 dark:text-rose-400 mb-1">Precio Mensual</p>
-                                <p className="text-4xl font-black text-slate-900 dark:text-white">${parseFloat(inmueble.precio).toLocaleString()}</p>
-                            </div>
-                        </div>
 
-                        <div className="mt-10">
-                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Acerca de esta propiedad</h2>
-                            <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                                {/* Características */}
+                                <div className="flex flex-wrap gap-4 mb-10">
+                                    {inmueble.habitaciones != null && inmueble.habitaciones > 0 && (
+                                        <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700/50">
+                                            <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.habitaciones}</p>
+                                                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Habitaciones</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {inmueble.banos != null && inmueble.banos > 0 && (
+                                        <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700/50">
+                                            <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.banos}</p>
+                                                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Baños</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {inmueble.garajes != null && inmueble.garajes > 0 && (
+                                        <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700/50">
+                                            <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.garajes}</p>
+                                                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Garajes</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {inmueble.salas != null && inmueble.salas > 0 && (
+                                        <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700/50">
+                                            <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.salas}</p>
+                                                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Salas</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {inmueble.cocinas != null && inmueble.cocinas > 0 && (
+                                        <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700/50">
+                                            <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"></path></svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.cocinas}</p>
+                                                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Cocinas</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {inmueble.es_comercial && (
+                                        <div className="flex items-center gap-4 bg-slate-900 dark:bg-indigo-900/40 px-5 py-4 rounded-2xl border border-slate-800 dark:border-indigo-800/50 shadow-sm">
+                                            <div className="w-10 h-10 rounded-full bg-slate-800 dark:bg-indigo-800/50 flex items-center justify-center text-white shadow-sm">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-white leading-none">Local / Comercial</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                            <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line text-lg mb-10">
                                 {inmueble.descripcion}
                             </div>
-                        </div>
+
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Ubicación en el Mapa</h3>
+
+                            {/* Contenedor del Mapa */}
+                            <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm relative bg-slate-100 dark:bg-slate-800 space-y-0 flex flex-col">
+                                <div className="w-full h-[350px] relative">
+                                    <iframe
+                                        className="absolute top-0 left-0 w-full h-full"
+                                        src={`https://maps.google.com/maps?q=${encodeURIComponent(inmueble.direccion)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                                        frameBorder="0"
+                                        scrolling="no"
+                                        marginHeight={0}
+                                        marginWidth={0}
+                                        title={`Mapa de ubicación para ${inmueble.direccion}`}
+                                    ></iframe>
+                                </div>
+                                {inmueble.enlace_google_maps && (
+                                    <div className="bg-rose-50 dark:bg-slate-900 border-t border-rose-100 dark:border-slate-700 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center shrink-0">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                            </div>
+                                            <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">El propietario ha compartido una ruta exacta.</p>
+                                        </div>
+                                        <a
+                                            href={inmueble.enlace_google_maps}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl transition shadow-md shadow-rose-500/20 whitespace-nowrap"
+                                        >
+                                            Abrir ubicación exacta
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
 
                         {inmueble.imagenes && inmueble.imagenes.length > 0 && (
                             <div className="mt-12">
@@ -183,12 +291,48 @@ export default function PublicInmuebleDetail() {
                                 </div>
                             </div>
                         )}
+                        </div>
 
-                        <div className="mt-12 pt-10 border-t border-rose-100 dark:border-slate-800">
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">¿Te interesa esta propiedad?</h3>
-                            <button className="w-full sm:w-auto px-8 py-4 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl shadow-lg shadow-rose-500/30 transition transform hover:-translate-y-1 text-lg">
-                                Contactar Administrador
-                            </button>
+                            {/* Columna Derecha Modal (Precio y CTAs) - Sticky */}
+                            <div className="w-full lg:w-[380px] shrink-0">
+                                <div className="bg-slate-900 dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-800 dark:border-slate-700 shadow-2xl shadow-slate-900/10 lg:sticky lg:top-8 mt-4 lg:mt-0">
+                                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Precio Mensual</p>
+                                    <p className="text-4xl sm:text-5xl font-black text-white mb-8">${parseFloat(inmueble.precio).toLocaleString()}</p>
+
+                                    {inmueble.en_conjunto && (
+                                        <div className="mb-8 pt-6 border-t border-slate-700/50">
+                                            <p className="text-xs font-semibold text-slate-300 mb-2 flex items-center gap-2">
+                                                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                                Conjunto Cerrado
+                                            </p>
+                                            {inmueble.valor_administracion && parseFloat(inmueble.valor_administracion) > 0 && (
+                                                <div className="flex flex-col mt-2">
+                                                    <p className="text-sm text-slate-300">
+                                                        Admón: <span className="font-bold text-white">${parseFloat(inmueble.valor_administracion).toLocaleString()}</span>
+                                                    </p>
+                                                    {inmueble.administracion_incluida && (
+                                                        <span className="mt-2 text-[10px] font-bold px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-md w-max inline-block">
+                                                            Incluida en el canon
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    
+                                    <div className="flex flex-col gap-4">
+                                        <a
+                                            href={`https://wa.me/573105769214?text=${encodeURIComponent(`Hola, estoy interesado en la propiedad: ${inmueble.titulo} ubicada en ${inmueble.direccion}.`)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#25D366] hover:bg-[#1DA851] text-white font-black rounded-xl transition-all shadow-[0_4px_14px_0_rgba(37,211,102,0.39)] hover:shadow-[0_6px_20px_rgba(37,211,102,0.23)] hover:-translate-y-0.5 active:scale-95 text-[15px]"
+                                        >
+                                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+                                            Hablar por WhatsApp
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

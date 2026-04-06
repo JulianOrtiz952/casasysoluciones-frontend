@@ -81,58 +81,58 @@ export default function Perfil() {
         <div className="max-w-2xl mx-auto space-y-6">
             <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-6">Configurar Perfil</h1>
 
-            <div className="bg-white dark:bg-slate-900 overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl">
-                <div className="p-6 sm:p-8">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-6">Cambiar Contraseña</h2>
+            <div className="bg-white dark:bg-slate-900/90 overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 dark:border-slate-800 rounded-3xl">
+                <div className="p-8 sm:p-10">
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Cambiar Contraseña</h2>
 
                     {mensaje && (
-                        <div className={`p-4 mb-6 rounded-xl border ${mensaje.tipo === 'exito' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 text-rose-700 dark:text-rose-400'}`}>
+                        <div className={`p-4 mb-6 rounded-xl border font-medium text-sm ${mensaje.tipo === 'exito' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 text-rose-700 dark:text-rose-400'}`}>
                             {mensaje.texto}
                         </div>
                     )}
 
-                    <form onSubmit={cambiarClave} className="space-y-5">
-                        <div className="space-y-1">
-                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Contraseña Actual *</label>
+                    <form onSubmit={cambiarClave} className="space-y-6">
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Contraseña Actual *</label>
                             <input
                                 type="password"
                                 required
                                 value={oldPassword}
                                 onChange={(e) => setOldPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:focus:ring-rose-500 text-slate-900 dark:text-white transition-all"
+                                className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 text-slate-900 dark:text-white transition-all shadow-sm"
                                 placeholder="Escribe tu contraseña actual"
                             />
                         </div>
 
-                        <div className="space-y-1">
-                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nueva Contraseña *</label>
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Nueva Contraseña *</label>
                             <input
                                 type="password"
                                 required
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:focus:ring-rose-500 text-slate-900 dark:text-white transition-all"
+                                className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 text-slate-900 dark:text-white transition-all shadow-sm"
                                 placeholder="Mínimo 8 caracteres"
                             />
                         </div>
 
-                        <div className="space-y-1">
-                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Confirmar Nueva Contraseña *</label>
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Confirmar Nueva Contraseña *</label>
                             <input
                                 type="password"
                                 required
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:focus:ring-rose-500 text-slate-900 dark:text-white transition-all"
+                                className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 text-slate-900 dark:text-white transition-all shadow-sm"
                                 placeholder="Vuelve a escribir la nueva contraseña"
                             />
                         </div>
 
-                        <div className="pt-4">
+                        <div className="pt-6">
                             <button
                                 type="submit"
                                 disabled={cargando}
-                                className={`w-full py-3 px-4 rounded-xl font-bold text-white transition-all shadow-md active:scale-95 flex justify-center items-center ${cargando ? 'bg-slate-400 cursor-not-allowed' : 'bg-rose-500 hover:bg-rose-600 hover:shadow-rose-500/25'}`}
+                                className={`w-full py-4 px-6 rounded-xl font-bold tracking-wide text-white transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] flex justify-center items-center ${cargando ? 'bg-slate-400 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] active:scale-[0.98]'}`}
                             >
                                 {cargando ? (
                                     <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

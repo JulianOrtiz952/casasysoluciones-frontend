@@ -21,7 +21,17 @@ export default function NuevoInmueble() {
         precio: '',
         direccion: '',
         descripcion: '',
-        estado: 'en_oferta'
+        estado: 'en_oferta',
+        habitaciones: '',
+        banos: '',
+        salas: '',
+        cocinas: '',
+        garajes: '',
+        es_comercial: false,
+        en_conjunto: false,
+        administracion_incluida: false,
+        valor_administracion: '',
+        enlace_google_maps: ''
     });
 
     const handleDrag = (e: React.DragEvent) => {
@@ -80,8 +90,14 @@ export default function NuevoInmueble() {
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        if (name === 'precio') {
+        const { name, value, type } = e.target;
+
+        if (type === 'checkbox') {
+            setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+            return;
+        }
+
+        if (name === 'precio' || name === 'valor_administracion') {
             const rawValue = value.replace(/[^0-9]/g, '');
             if (!rawValue) {
                 setFormData(prev => ({ ...prev, [name]: '' }));
@@ -106,15 +122,32 @@ export default function NuevoInmueble() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        if (!formData.direccion && !formData.enlace_google_maps) {
+            alert('Por favor provee la Dirección Exacta o un Enlace de Google Maps.');
+            return;
+        }
+
         setLoading(true);
 
         try {
             const data = new FormData();
             data.append('titulo', formData.titulo);
             data.append('precio', formData.precio.replace(/['',]/g, ''));
-            data.append('direccion', formData.direccion);
+            data.append('direccion', formData.direccion || 'Ver enlace de Google Maps adjunto');
             data.append('descripcion', formData.descripcion);
             data.append('estado', formData.estado);
+
+            if (formData.habitaciones) data.append('habitaciones', formData.habitaciones);
+            if (formData.banos) data.append('banos', formData.banos);
+            if (formData.salas) data.append('salas', formData.salas);
+            if (formData.cocinas) data.append('cocinas', formData.cocinas);
+            if (formData.garajes) data.append('garajes', formData.garajes);
+            data.append('es_comercial', formData.es_comercial ? 'true' : 'false');
+            data.append('en_conjunto', formData.en_conjunto ? 'true' : 'false');
+            data.append('administracion_incluida', formData.administracion_incluida ? 'true' : 'false');
+            if (formData.valor_administracion) data.append('valor_administracion', formData.valor_administracion.replace(/['',]/g, ''));
+            if (formData.enlace_google_maps) data.append('enlace_google_maps', formData.enlace_google_maps);
 
             // Agregar todas las imágenes
             imagenes.forEach((imagen) => {
@@ -155,84 +188,162 @@ export default function NuevoInmueble() {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 rounded-3xl p-8 transition-colors">
+            <div className="bg-white dark:bg-slate-900/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 dark:border-slate-800 rounded-3xl p-8 sm:p-10 transition-colors">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Título de la Propiedad</label>
-                            <input name="titulo" value={formData.titulo} onChange={handleInputChange} type="text" required placeholder="Ej. Casa campestre..." className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Título de la Propiedad</label>
+                            <input name="titulo" value={formData.titulo} onChange={handleInputChange} type="text" required placeholder="Ej. Casa campestre..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Precio Mensual ($)</label>
-                            <input name="precio" value={formData.precio} onChange={handleInputChange} type="text" required placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Precio Mensual ($)</label>
+                            <input name="precio" value={formData.precio} onChange={handleInputChange} type="text" required placeholder="0" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Dirección Exacta</label>
-                            <input name="direccion" value={formData.direccion} onChange={handleInputChange} type="text" required placeholder="Ej. Calle 123..." className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Dirección Exacta (Opcional si usas el mapa)</label>
+                            <input name="direccion" value={formData.direccion} onChange={handleInputChange} type="text" placeholder="Ej. Calle 123..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Estado de la Propiedad</label>
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Enlace de Google Maps (Opcional)</label>
+                            <input name="enlace_google_maps" value={formData.enlace_google_maps} onChange={handleInputChange} type="url" placeholder="Ej. https://maps.google.com/..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                        </div>
+                        <div className="space-y-2 group relative">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Estado de la Propiedad</label>
                             <div className="relative">
-                                <select name="estado" value={formData.estado} onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all appearance-none cursor-pointer">
+                                <select name="estado" value={formData.estado} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all appearance-none cursor-pointer shadow-sm">
                                     <option value="en_oferta">En Oferta</option>
-                                    <option value="arrendada">Arrendada (Requiere asignar inquilino al guardar si fuera edición, aunque en creación mejor en oferta)</option>
+                                    <option value="arrendada">Arrendada</option>
                                     <option value="en_mantenimiento">En Mantenimiento</option>
                                     <option value="inactiva">Inactiva</option>
                                 </select>
-                                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-500">
+                                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Descripción Detallada</label>
-                        <textarea name="descripcion" value={formData.descripcion} onChange={handleInputChange} required rows={4} placeholder="Características principales, habitaciones, baños..." className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all"></textarea>
+                    {/* Características Adicionales */}
+                    <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Características Adicionales</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
+                            <div className="space-y-2 group">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Habitaciones</label>
+                                <input name="habitaciones" value={formData.habitaciones} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                            </div>
+                            <div className="space-y-2 group">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Baños</label>
+                                <input name="banos" value={formData.banos} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                            </div>
+                            <div className="space-y-2 group">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Salas</label>
+                                <input name="salas" value={formData.salas} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                            </div>
+                            <div className="space-y-2 group">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Cocinas</label>
+                                <input name="cocinas" value={formData.cocinas} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                            </div>
+                            <div className="space-y-2 group">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Garajes</label>
+                                <input name="garajes" value={formData.garajes} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                            </div>
+                        </div>
+                        <div className="mt-8 flex flex-col space-y-4 md:space-y-0 md:flex-row md:items-center md:space-x-8">
+                            <label className="flex items-center space-x-3 cursor-pointer group w-max">
+                                <input
+                                    name="es_comercial"
+                                    type="checkbox"
+                                    checked={formData.es_comercial}
+                                    onChange={handleInputChange}
+                                    className="w-5 h-5 rounded border-slate-300 text-slate-900 dark:text-slate-400 focus:ring-slate-900 cursor-pointer shadow-sm"
+                                />
+                                <span className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300 select-none group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                                    ¿Es de tipo comercial?
+                                </span>
+                            </label>
+                            <label className="flex items-center space-x-3 cursor-pointer group w-max">
+                                <input
+                                    name="en_conjunto"
+                                    type="checkbox"
+                                    checked={formData.en_conjunto}
+                                    onChange={handleInputChange}
+                                    className="w-5 h-5 rounded border-slate-300 text-slate-900 dark:text-slate-400 focus:ring-slate-900 cursor-pointer shadow-sm"
+                                />
+                                <span className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300 select-none group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                                    ¿Está en conjunto cerrado?
+                                </span>
+                            </label>
+                        </div>
+
+                        {formData.en_conjunto && (
+                            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-800/30 p-6 border border-slate-200 dark:border-slate-700/50 rounded-2xl transition-all">
+                                <div className="space-y-2 group">
+                                    <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Valor Administración Mensual ($)</label>
+                                    <input name="valor_administracion" value={formData.valor_administracion} onChange={handleInputChange} type="text" placeholder="0" className="w-full px-5 py-3.5 bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                                </div>
+                                <label className="flex items-center md:mt-8 space-x-3 cursor-pointer group w-max">
+                                    <input
+                                        name="administracion_incluida"
+                                        type="checkbox"
+                                        checked={formData.administracion_incluida}
+                                        onChange={handleInputChange}
+                                        className="w-5 h-5 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer bg-white shadow-sm"
+                                    />
+                                    <span className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300 select-none group-hover:text-emerald-600 transition-colors">
+                                        ¿El valor del alquiler incluye esta administración?
+                                    </span>
+                                </label>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-2 group mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                        <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Descripción Detallada</label>
+                        <textarea name="descripcion" value={formData.descripcion} onChange={handleInputChange} required rows={4} placeholder="Características principales, estado del inmueble, reglas especiales..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm font-light leading-relaxed"></textarea>
                     </div>
 
                     <div className="space-y-2 relative">
-                        <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Galería de Imágenes</label>
+                        <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Galería de Imágenes</label>
 
                         <div
-                            className={`mt-1 flex flex-col justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-colors cursor-pointer ${dragActive ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20' : 'border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                            className={`mt-2 flex flex-col justify-center px-6 py-10 border-2 border-dashed rounded-2xl transition-colors cursor-pointer ${dragActive ? 'border-slate-900 bg-slate-100 dark:border-rose-500 dark:bg-slate-800' : 'border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 bg-white dark:bg-slate-800/30'}`}
                             onDragEnter={handleDrag}
                             onDragLeave={handleDrag}
                             onDragOver={handleDrag}
                             onDrop={handleDrop}
                             onClick={onBoxClick}
                         >
-                            <svg className="mx-auto h-10 w-10 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <svg className="mx-auto h-12 w-12 text-slate-400 mb-3" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
-                            <div className="flex text-sm text-slate-600 dark:text-slate-400 justify-center mt-2">
-                                <span className="font-medium text-rose-500 hover:text-rose-600">Subir múltiples archivos</span>
-                                <span className="ml-1">o arrastrar y soltar</span>
+                            <div className="flex text-sm text-slate-600 dark:text-slate-400 justify-center">
+                                <span className="font-semibold text-slate-900 dark:text-rose-400 hover:underline">Sube tus archivos</span>
+                                <span className="ml-1">o arrástralos y suéltalos aquí</span>
                             </div>
                             <input ref={fileInputRef} onChange={handleChange} name="imagenes" type="file" multiple className="hidden" accept="image/*" />
                         </div>
 
                         {/* Image Previews */}
                         {previews.length > 0 && (
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
                                 {previews.map((src, index) => (
-                                    <div key={index} className="relative group rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
-                                        <img src={src} alt={`Preview ${index}`} className="w-full h-24 object-cover" />
+                                    <div key={index} className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+                                        <img src={src} alt={`Preview ${index}`} className="w-full h-28 object-cover" />
 
-                                        <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1 flex justify-between items-center opacity-0 group-hover:opacity-100 transition">
-                                            <button type="button" onClick={(e) => { e.stopPropagation(); setPortadaIndex(index); }} className={`px-2 py-0.5 text-xs font-bold rounded ${portadaIndex === index ? 'bg-emerald-500 text-white' : 'bg-white text-slate-900'}`}>
+                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/90 to-transparent p-2 pt-6 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button type="button" onClick={(e) => { e.stopPropagation(); setPortadaIndex(index); }} className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded shadow-sm transition-colors ${portadaIndex === index ? 'bg-emerald-500 text-white' : 'bg-white text-slate-900 hover:bg-slate-100'}`}>
                                                 {portadaIndex === index ? 'Portada' : 'Elegir'}
                                             </button>
-                                            <button type="button" onClick={(e) => { e.stopPropagation(); removeImage(index); }} className="text-white bg-rose-500 rounded-full p-1 hover:bg-rose-600">
-                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                            <button type="button" onClick={(e) => { e.stopPropagation(); removeImage(index); }} className="text-white bg-rose-500/90 rounded-full p-1.5 hover:bg-rose-600 backdrop-blur-sm transition-colors">
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
                                             </button>
                                         </div>
 
                                         {portadaIndex === index && (
-                                            <div className="absolute top-1 right-1 bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                            <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[9px] tracking-widest font-bold px-2 py-1 rounded shadow-sm border border-emerald-400">
                                                 PORTADA
                                             </div>
                                         )}
@@ -242,11 +353,11 @@ export default function NuevoInmueble() {
                         )}
                     </div>
 
-                    <div className="pt-4 flex justify-end gap-3">
-                        <Link href="/dashboard/inmuebles" className="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    <div className="pt-8 mt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+                        <Link href="/dashboard/inmuebles" className="px-6 py-3.5 bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all text-sm tracking-wide">
                             Cancelar
                         </Link>
-                        <button disabled={loading} type="submit" className="px-6 py-3 bg-rose-500 text-white font-semibold rounded-xl hover:bg-rose-600 transition shadow-lg shadow-rose-500/30">
+                        <button disabled={loading} type="submit" className="px-8 py-3.5 bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white font-bold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] text-sm tracking-wide">
                             {loading ? 'Guardando...' : 'Guardar Inmueble'}
                         </button>
                     </div>

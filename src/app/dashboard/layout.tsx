@@ -29,10 +29,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
 
     const classLink = (path: string) => {
-        const base = "flex items-center space-x-3 px-3 py-2.5 rounded-lg font-medium transition border";
+        const base = "flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-medium transition-all duration-200";
         return checkActive(path)
-            ? `${base} bg-rose-500/20 text-rose-500 dark:text-rose-400 border-rose-500/30 shadow-sm`
-            : `${base} text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent`;
+            ? `${base} bg-slate-900 text-white dark:bg-rose-600 dark:text-white shadow-md shadow-slate-900/10 dark:shadow-rose-600/20`
+            : `${base} text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60`;
     };
 
     useEffect(() => {
@@ -48,15 +48,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
         <div className="flex font-sans h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors">
             {/* Sidebar */}
-            <aside className="w-64 bg-slate-900 border-r border-slate-800 dark:border-slate-800 hidden md:flex flex-col shrink-0 transition-colors">
-                <div className="h-16 flex items-center px-6 border-b border-slate-800">
-                    <svg className="w-6 h-6 text-rose-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                    <span className="text-white font-bold text-lg tracking-wide">CasasySoluciones</span>
+            <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 hidden md:flex flex-col shrink-0 transition-colors shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
+                <div className="h-16 flex items-center px-6 border-b border-slate-200/80 dark:border-slate-800">
+                    <img src="/logo.jpeg" alt="Logo" className="w-8 h-8 rounded shrink-0 mr-3 border border-slate-100/50" />
+                    <span className="text-slate-900 dark:text-white font-bold text-lg tracking-tight">Casas<span className="text-rose-600">y</span>Soluciones</span>
                 </div>
 
-                <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
                     <Link href="/dashboard" className={classLink('/dashboard')}>
                         <svg className="w-5 h-5 empty:hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -69,7 +67,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </svg>
                         <span>Registrar Inmueble</span>
                     </Link>
-                    <div className="h-px bg-slate-200 dark:bg-slate-800 my-4"></div>
+                    <div className="h-px bg-slate-100 dark:bg-slate-800/60 my-4"></div>
                     <Link href="/dashboard/inmuebles" className={classLink('/dashboard/inmuebles')}>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -107,29 +105,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </Link>
                 </nav>
 
-                <div className="p-4 border-t border-slate-800">
-                    <Link href="/" className="flex items-center space-x-3 text-sm text-slate-400 hover:text-rose-400 transition">
+                <div className="p-4 border-t border-slate-200/80 dark:border-slate-800">
+                    <button onClick={() => {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('refreshToken');
+                        window.location.href = '/login';
+                    }} className="flex items-center w-full space-x-3 px-3.5 py-2.5 text-sm font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                         <span>Cerrar sesión</span>
-                    </Link>
+                    </button>
                 </div>
             </aside>
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
-                <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between px-6 z-10 transition-colors">
-                    <div className="flex items-center space-x-3">
-                        <img src="/logo.jpeg" alt="Casas y Soluciones Logo" className="h-10 w-auto object-contain drop-shadow-sm rounded bg-white p-0.5" />
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">Casas y Soluciones</h2>
+                <header className="h-16 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 shrink-0 flex items-center justify-between px-6 z-10 transition-colors shadow-sm">
+                    <div className="flex items-center">
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight md:hidden">Casas<span className="text-rose-600">y</span>Soluciones</h2>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="w-9 h-9 rounded-full bg-rose-50 dark:bg-slate-800 flex items-center justify-center text-rose-500 dark:text-rose-400 font-bold border border-rose-200 dark:border-slate-700 shadow-sm">
+                        <div className="w-9 h-9 rounded-full bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white dark:text-rose-400 font-bold shadow-sm ring-2 ring-slate-100 dark:ring-slate-700">
                             A
                         </div>
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-auto p-6 md:p-8 relative">
+                <main className="flex-1 overflow-auto p-6 md:p-8 relative bg-slate-50 dark:bg-slate-950">
                     {children}
                 </main>
             </div>

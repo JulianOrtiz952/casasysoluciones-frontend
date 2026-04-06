@@ -19,6 +19,9 @@ interface Inmueble {
   imagen: string | null;
   imagenes?: Imagen[];
   estado: 'arrendada' | 'en_oferta' | 'en_mantenimiento' | 'inactiva';
+  en_conjunto?: boolean;
+  administracion_incluida?: boolean;
+  valor_administracion?: string | null;
 }
 
 function InmuebleCard({ inmueble }: { inmueble: Inmueble }) {
@@ -48,56 +51,73 @@ function InmuebleCard({ inmueble }: { inmueble: Inmueble }) {
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900/80 rounded-2xl shadow-xl hover:shadow-2xl transition duration-300 overflow-hidden transform hover:-translate-y-1 border border-rose-50 dark:border-slate-800 flex flex-col">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 overflow-hidden border border-slate-100 dark:border-slate-800 flex flex-col group/card">
       <div className="h-64 overflow-hidden relative group bg-slate-100 dark:bg-slate-800">
         <Link href={`/inmuebles/${inmueble.id}`} className="block w-full h-full">
           {images.length > 0 ? (
-            <img src={images[currentIdx]} alt={inmueble.titulo} className="w-full h-full object-cover transition duration-500 group-hover:scale-105" />
+            <img src={images[currentIdx]} alt={inmueble.titulo} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-400">
-              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </div>
           )}
         </Link>
-        <div className="absolute top-4 left-4 pointer-events-none">
-          <span className="px-3 py-1 bg-emerald-500/90 text-white text-xs font-bold uppercase tracking-wider rounded-full backdrop-blur-md shadow-sm">
+        <div className="absolute top-4 left-4 pointer-events-none z-10">
+          <span className="px-3.5 py-1.5 bg-white/90 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 border border-slate-200/50 dark:border-slate-700 text-xs font-bold uppercase tracking-wider rounded-full backdrop-blur-md shadow-sm">
             En Oferta
           </span>
         </div>
 
         {images.length > 1 && (
           <>
-            <button onClick={prevImg} className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/30 hover:bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition backdrop-blur-sm z-10 focus:outline-none">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
+            <button onClick={prevImg} className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white dark:bg-black/50 dark:hover:bg-black/80 text-slate-800 dark:text-white rounded-full opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm z-20 shadow-sm focus:outline-none">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
             </button>
-            <button onClick={nextImg} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/30 hover:bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition backdrop-blur-sm z-10 focus:outline-none">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
+            <button onClick={nextImg} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white dark:bg-black/50 dark:hover:bg-black/80 text-slate-800 dark:text-white rounded-full opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm z-20 shadow-sm focus:outline-none">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
             </button>
 
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 pointer-events-none">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 pointer-events-none">
               {images.map((_, i) => (
-                <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIdx ? 'w-3 bg-white' : 'w-1.5 bg-white/50'}`} />
+                <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIdx ? 'w-4 bg-white shadow-sm' : 'w-1.5 bg-white/60'}`} />
               ))}
             </div>
           </>
         )}
       </div>
 
-      <div className="p-5 sm:p-6 flex flex-col flex-grow">
-        <h3 className="text-xl font-bold text-slate-900 dark:text-white line-clamp-1">{inmueble.titulo}</h3>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 flex items-center gap-1">
-          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-          <span className="line-clamp-1">{inmueble.direccion}</span>
-        </p>
-        <div className="my-4 h-px bg-rose-50 dark:bg-slate-800"></div>
-        <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-3 min-h-[60px] flex-grow">{inmueble.descripcion}</p>
-        <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="p-6 flex flex-col flex-grow">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white line-clamp-1 group-hover/card:text-rose-600 transition-colors">{inmueble.titulo}</h3>
+        <div className="flex gap-2 mt-2 items-start">
+          <svg className="w-4 h-4 mt-0.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1 w-full font-medium" title={inmueble.direccion}>
+            {inmueble.direccion.match(/^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)/)
+              ? "Ubicación sugerida desde Mapa"
+              : inmueble.direccion}
+          </p>
+        </div>
+        
+        <div className="my-5 h-px bg-slate-100 dark:bg-slate-800"></div>
+        
+        <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-3 min-h-[60px] flex-grow leading-relaxed font-light">{inmueble.descripcion}</p>
+        
+        <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <span className="text-xs uppercase font-semibold text-rose-500 block mb-0.5">Mensual</span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">${parseFloat(inmueble.precio).toLocaleString()}</span>
+            <span className="text-[11px] uppercase font-bold tracking-wider text-slate-400 block mb-1">Precio Mensual</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">${parseFloat(inmueble.precio).toLocaleString()}</span>
+            {inmueble.en_conjunto && (
+              <div className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-medium text-slate-400">Administración: </span>
+                {inmueble.administracion_incluida ? (
+                  <span className="text-emerald-500 font-medium bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded">Incluida</span>
+                ) : (
+                  <span className="font-semibold text-slate-600 dark:text-slate-300">+ ${inmueble.valor_administracion ? parseFloat(inmueble.valor_administracion).toLocaleString() : '0'}</span>
+                )}
+              </div>
+            )}
           </div>
-          <Link href={`/inmuebles/${inmueble.id}`} className="w-full sm:w-auto text-center bg-slate-900 dark:bg-rose-500 text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-800 dark:hover:bg-rose-600 transition shadow-md">
-            Ver Detalles
+          <Link href={`/inmuebles/${inmueble.id}`} className="w-full sm:w-auto text-center bg-slate-900 dark:bg-rose-600 text-white px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-800 dark:hover:bg-rose-500 transition-all shadow-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
+            Ver detalles
           </Link>
         </div>
       </div>
@@ -131,34 +151,23 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-rose-50/30 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300">
       {/* Navbar Pública */}
-      <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-rose-100 dark:border-slate-800 transition-colors duration-300">
+      <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b border-slate-200/80 dark:border-slate-800 transition-colors duration-300 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <img src="/logo.jpeg" alt="CasasySoluciones Logo" className="h-12 w-auto rounded-md bg-white p-1 shadow-sm" />
-              <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-pink-500">
-                CasasySoluciones
+              <img src="/logo.jpeg" alt="CasasySoluciones Logo" className="h-11 w-auto rounded-md bg-white p-1 shadow-sm border border-slate-100" />
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                Casas<span className="text-rose-600">y</span>Soluciones
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-full text-slate-500 hover:bg-rose-100 dark:hover:bg-slate-800 dark:text-slate-400 transition"
-                aria-label="Alternar tema"
-              >
-                {theme === 'dark' ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-                )}
-              </button>
               <Link
                 href="/login"
-                className="text-sm font-semibold text-white bg-rose-500 dark:bg-rose-600 px-5 py-2.5 rounded-full hover:bg-rose-600 dark:hover:bg-rose-500 transition shadow-md shadow-rose-500/30"
+                className="text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 px-6 py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
               >
-                Acceso Admin
+                Iniciar Sesión
               </Link>
             </div>
           </div>
@@ -166,14 +175,19 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-20 pb-32">
-        <div className="absolute inset-0 bg-rose-50/50 dark:bg-slate-900 -skew-y-6 transform origin-top-left -z-10 transition-colors"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-6 leading-tight">
-            Encuentra el hogar de tus <span className="text-rose-500 dark:text-rose-400">sueños</span>
+      <section className="relative overflow-hidden pt-24 pb-32 flex items-center justify-center min-h-[450px]">
+        <div className="absolute inset-0 w-full h-full bg-grid-slate-100/[0.04] bg-[length:32px_32px]"></div>
+        <div className="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-slate-100 to-transparent -z-10"></div>
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-rose-100/40 rounded-full blur-3xl opacity-50 mix-blend-multiply"></div>
+        <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-blue-100/40 rounded-full blur-3xl opacity-50 mix-blend-multiply"></div>
+        
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-6 leading-[1.15]">
+            Encuentra la propiedad que <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-pink-500">siempre soñaste</span>
           </h2>
-          <p className="mt-4 text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Explora nuestro catálogo exclusivo de propiedades seleccionadas solo para ti. Comodidad, lujo y accesibilidad.
+          <p className="mt-6 text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto font-light leading-relaxed">
+            Descubre nuestro catálogo exclusivo. Espacios de comodidad y lujo diseñados para convertirse en tu próximo hogar.
           </p>
         </div>
       </section>

@@ -25,6 +25,15 @@ interface Inmueble {
     imagen: string | null;
     imagenes?: Imagen[];
     estado: 'arrendada' | 'en_oferta' | 'en_mantenimiento' | 'inactiva';
+    en_conjunto?: boolean;
+    administracion_incluida?: boolean;
+    valor_administracion?: string;
+    habitaciones?: number | null;
+    banos?: number | null;
+    salas?: number | null;
+    cocinas?: number | null;
+    garajes?: number | null;
+    es_comercial?: boolean;
 }
 
 interface Historial {
@@ -132,7 +141,7 @@ export default function DashboardInmuebleDetail() {
     if (loading) {
         return (
             <div className="h-64 flex justify-center items-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-800 dark:border-rose-500"></div>
             </div>
         );
     }
@@ -148,8 +157,8 @@ export default function DashboardInmuebleDetail() {
                 <div className="flex-1">
                     <div className="flex items-center justify-between">
                         <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Admin: {inmueble.titulo}</h1>
-                        <Link href={`/dashboard/inmuebles/editar/${id}`} className="px-5 py-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-semibold rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition flex items-center gap-2">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        <Link href={`/dashboard/inmuebles/editar/${id}`} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold tracking-wide rounded-xl transition-all shadow-sm flex items-center gap-2 text-sm">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             Editar
                         </Link>
                     </div>
@@ -180,7 +189,56 @@ export default function DashboardInmuebleDetail() {
                             <h3 className="font-bold text-lg mb-2 text-slate-900 dark:text-white">{inmueble.direccion}</h3>
                             <p className="text-xl font-black text-rose-500 mb-4">${parseFloat(inmueble.precio).toLocaleString()}</p>
 
-                            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-4">{inmueble.descripcion}</p>
+                            {/* Características */}
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {inmueble.habitaciones != null && inmueble.habitaciones > 0 && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700/50">
+                                        <span className="text-sm font-black">{inmueble.habitaciones}</span> Habitaciones
+                                    </span>
+                                )}
+                                {inmueble.banos != null && inmueble.banos > 0 && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700/50">
+                                        <span className="text-sm font-black">{inmueble.banos}</span> Baños
+                                    </span>
+                                )}
+                                {inmueble.garajes != null && inmueble.garajes > 0 && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700/50">
+                                        <span className="text-sm font-black">{inmueble.garajes}</span> Garajes
+                                    </span>
+                                )}
+                                {inmueble.salas != null && inmueble.salas > 0 && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700/50">
+                                        <span className="text-sm font-black">{inmueble.salas}</span> Salas
+                                    </span>
+                                )}
+                                {inmueble.cocinas != null && inmueble.cocinas > 0 && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700/50">
+                                        <span className="text-sm font-black">{inmueble.cocinas}</span> Cocinas
+                                    </span>
+                                )}
+                                {inmueble.es_comercial && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold uppercase tracking-wider border border-slate-200 dark:border-slate-700/50">
+                                        Uso Comercial
+                                    </span>
+                                )}
+                            </div>
+
+                            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-4 whitespace-pre-line">{inmueble.descripcion}</p>
+
+                            {inmueble.en_conjunto && (
+                                <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800 rounded-xl">
+                                    <p className="font-semibold text-emerald-800 dark:text-emerald-400 text-sm mb-1">
+                                        <svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                        Ubicado en conjunto cerrado
+                                    </p>
+                                    {inmueble.valor_administracion && parseFloat(inmueble.valor_administracion) > 0 && (
+                                        <p className="text-emerald-700 dark:text-emerald-300 text-sm">
+                                            Valor Administración: <span className="font-bold">${parseFloat(inmueble.valor_administracion).toLocaleString()}</span>
+                                            {inmueble.administracion_incluida && <span className="ml-2 text-[10px] uppercase font-bold px-2 py-0.5 bg-emerald-200 dark:bg-emerald-700/50 rounded-full">Incluida en precio</span>}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
 
                             <Link href={`/inmuebles/${inmueble.id}`} target="_blank" className="mt-6 flex justify-center w-full px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 font-medium transition text-sm text-center">
                                 Ver como Cliente Público
@@ -210,13 +268,13 @@ export default function DashboardInmuebleDetail() {
                     <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Asignar Nuevo Inquilino</h2>
                         <form onSubmit={handleAsignar} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                            <div className="md:col-span-2 space-y-2">
-                                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Seleccionar Inquilino</label>
+                            <div className="md:col-span-2 space-y-2 group">
+                                <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Seleccionar Inquilino</label>
                                 <select
                                     required
                                     value={inquilinoSeleccionado}
                                     onChange={(e) => setInquilinoSeleccionado(e.target.value)}
-                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all appearance-none cursor-pointer"
+                                    className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all appearance-none cursor-pointer shadow-sm"
                                 >
                                     <option value="">-- Elige --</option>
                                     {inquilinos.map(inq => (
@@ -224,18 +282,18 @@ export default function DashboardInmuebleDetail() {
                                     ))}
                                 </select>
                             </div>
-                            <div className="md:col-span-2 space-y-2">
-                                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Fecha de Inicio</label>
+                            <div className="md:col-span-2 space-y-2 group">
+                                <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Fecha de Inicio</label>
                                 <input
                                     required
                                     type="date"
                                     value={fechaInicio}
                                     onChange={(e) => setFechaInicio(e.target.value)}
-                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all"
+                                    className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm"
                                 />
                             </div>
                             <div className="md:col-span-1">
-                                <button disabled={saving} type="submit" className="w-full px-4 py-3 bg-rose-500 text-white font-semibold rounded-xl hover:bg-rose-600 transition shadow-lg shadow-rose-500/30">
+                                <button disabled={saving} type="submit" className="w-full h-[52px] bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white font-bold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] active:scale-95 text-sm">
                                     {saving ? 'Guardando' : 'Asignar'}
                                 </button>
                             </div>

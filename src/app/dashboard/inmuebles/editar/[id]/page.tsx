@@ -39,6 +39,10 @@ export default function EditarInmueble() {
         direccion: '',
         descripcion: '',
         estado: 'en_oferta',
+        en_conjunto: false,
+        administracion_incluida: false,
+        valor_administracion: '',
+        enlace_google_maps: '',
         inquilinoId: '',
         fechaInicio: ''
     });
@@ -66,13 +70,30 @@ export default function EditarInmueble() {
                         formattedPrecio = `${thousands},${hundreds}`;
                     }
 
+                    const rawValueAdmin = String(data.valor_administracion || '').replace(/[^0-9]/g, '');
+                    let formattedAdmin = rawValueAdmin;
+                    if (rawValueAdmin.length > 6) {
+                        const millionsAdmin = rawValueAdmin.slice(0, -6).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                        const thousandsAdmin = rawValueAdmin.slice(-6, -3);
+                        const hundredsAdmin = rawValueAdmin.slice(-3);
+                        formattedAdmin = `${millionsAdmin}'${thousandsAdmin},${hundredsAdmin}`;
+                    } else if (rawValueAdmin.length > 3) {
+                        const thousandsAdmin = rawValueAdmin.slice(0, -3);
+                        const hundredsAdmin = rawValueAdmin.slice(-3);
+                        formattedAdmin = `${thousandsAdmin},${hundredsAdmin}`;
+                    }
+
                     setFormData(prev => ({
                         ...prev,
                         titulo: data.titulo,
                         precio: formattedPrecio,
                         direccion: data.direccion,
                         descripcion: data.descripcion,
-                        estado: data.estado
+                        estado: data.estado,
+                        en_conjunto: data.en_conjunto || false,
+                        administracion_incluida: data.administracion_incluida || false,
+                        valor_administracion: formattedAdmin,
+                        enlace_google_maps: data.enlace_google_maps || ''
                     }));
                     if (data.imagenes) setRemoteImages(data.imagenes);
                 }
@@ -130,8 +151,14 @@ export default function EditarInmueble() {
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        if (name === 'precio') {
+        const { name, value, type } = e.target;
+
+        if (type === 'checkbox') {
+            setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+            return;
+        }
+
+        if (name === 'precio' || name === 'valor_administracion') {
             const rawValue = value.replace(/[^0-9]/g, '');
             if (!rawValue) {
                 setFormData(prev => ({ ...prev, [name]: '' }));
@@ -162,15 +189,24 @@ export default function EditarInmueble() {
             return;
         }
 
+        if (!formData.direccion && !formData.enlace_google_maps) {
+            alert('Por favor provee la Dirección Exacta o un Enlace de Google Maps.');
+            return;
+        }
+
         setSaving(true);
 
         try {
             const data = new FormData();
             data.append('titulo', formData.titulo);
             data.append('precio', formData.precio.replace(/['',]/g, ''));
-            data.append('direccion', formData.direccion);
+            data.append('direccion', formData.direccion || 'Ver enlace de Google Maps adjunto');
             data.append('descripcion', formData.descripcion);
             data.append('estado', formData.estado);
+            data.append('en_conjunto', formData.en_conjunto ? 'true' : 'false');
+            data.append('administracion_incluida', formData.administracion_incluida ? 'true' : 'false');
+            if (formData.valor_administracion) data.append('valor_administracion', formData.valor_administracion.replace(/['',]/g, ''));
+            if (formData.enlace_google_maps) data.append('enlace_google_maps', formData.enlace_google_maps);
 
             // Imágenes nuevas
             if (imagenes.length > 0) {
@@ -216,7 +252,7 @@ export default function EditarInmueble() {
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-800 dark:border-rose-500"></div>
             </div>
         );
     }
@@ -238,35 +274,75 @@ export default function EditarInmueble() {
             <div className="bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 rounded-3xl p-8 transition-colors">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Título de la Propiedad</label>
-                            <input name="titulo" value={formData.titulo} onChange={handleInputChange} type="text" required className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Título de la Propiedad</label>
+                            <input name="titulo" value={formData.titulo} onChange={handleInputChange} type="text" required className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Precio Mensual ($)</label>
-                            <input name="precio" value={formData.precio} onChange={handleInputChange} type="text" placeholder="0" required className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Precio Mensual ($)</label>
+                            <input name="precio" value={formData.precio} onChange={handleInputChange} type="text" placeholder="0" required className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Dirección Exacta</label>
-                            <input name="direccion" value={formData.direccion} onChange={handleInputChange} type="text" required className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all" />
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Dirección Exacta (Opcional si usas el mapa)</label>
+                            <input name="direccion" value={formData.direccion} onChange={handleInputChange} type="text" placeholder="Ej. Calle 123..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Estado de la Propiedad</label>
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Enlace de Google Maps (Opcional)</label>
+                            <input name="enlace_google_maps" value={formData.enlace_google_maps} onChange={handleInputChange} type="url" placeholder="Ej. https://maps.google.com/..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
+                        </div>
+                        <div className="space-y-2 group">
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Estado de la Propiedad</label>
                             <div className="relative">
-                                <select name="estado" value={formData.estado} onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all appearance-none cursor-pointer">
+                                <select name="estado" value={formData.estado} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all appearance-none cursor-pointer shadow-sm text-sm">
                                     <option value="en_oferta">En Oferta</option>
                                     <option value="arrendada">Arrendada (Ya está ocupado)</option>
                                     <option value="en_mantenimiento">En Mantenimiento</option>
                                     <option value="inactiva">Inactiva</option>
                                 </select>
                                 <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-500">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center space-x-3 cursor-pointer group w-max">
+                            <input
+                                name="en_conjunto"
+                                type="checkbox"
+                                checked={formData.en_conjunto}
+                                onChange={handleInputChange}
+                                className="w-5 h-5 rounded border-slate-300 text-rose-500 focus:ring-rose-500 cursor-pointer"
+                            />
+                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300 cursor-pointer select-none group-hover:text-rose-500 transition">
+                                ¿Está en conjunto cerrado?
+                            </label>
+                        </div>
+
+                        {formData.en_conjunto && (
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-800/30 p-5 border border-slate-200 dark:border-slate-700/50 rounded-2xl transition-all">
+                                <div className="space-y-2 group">
+                                    <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Valor de Administración Mensual ($)</label>
+                                    <input name="valor_administracion" value={formData.valor_administracion} onChange={handleInputChange} type="text" placeholder="0" className="w-full px-5 py-3.5 bg-white dark:bg-slate-900 border-none rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
+                                </div>
+                                <div className="flex items-center md:mt-8 space-x-3 cursor-pointer group w-max">
+                                    <input
+                                        name="administracion_incluida"
+                                        type="checkbox"
+                                        checked={formData.administracion_incluida}
+                                        onChange={handleInputChange}
+                                        className="w-5 h-5 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer bg-white dark:bg-slate-900 transition-colors"
+                                    />
+                                    <label className="text-[13px] font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                        ¿El valor del canon incluye esta administración?
+                                    </label>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {formData.estado === 'arrendada' && (
@@ -293,9 +369,9 @@ export default function EditarInmueble() {
                         </div>
                     )}
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Descripción Detallada</label>
-                        <textarea name="descripcion" value={formData.descripcion} onChange={handleInputChange} required rows={4} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-rose-400 dark:text-white transition-all"></textarea>
+                    <div className="space-y-2 group">
+                        <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Descripción Detallada</label>
+                        <textarea name="descripcion" value={formData.descripcion} onChange={handleInputChange} required rows={4} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm"></textarea>
                     </div>
 
                     {/* Imágenes Actuales si no se suben nuevas */}
@@ -352,11 +428,11 @@ export default function EditarInmueble() {
                         )}
                     </div>
 
-                    <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
-                        <Link href={`/dashboard/inmuebles/${id}`} className="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    <div className="pt-8 mt-8 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                        <Link href={`/dashboard/inmuebles/${id}`} className="px-6 py-3 bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition text-sm">
                             Cancelar
                         </Link>
-                        <button disabled={saving} type="submit" className="px-6 py-3 bg-rose-500 text-white font-semibold rounded-xl hover:bg-rose-600 transition shadow-lg shadow-rose-500/30 flex items-center gap-2">
+                        <button disabled={saving} type="submit" className="px-8 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white font-bold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] flex items-center gap-2 active:scale-95 text-sm">
                             {saving ? 'Guardando...' : 'Guardar Cambios'}
                         </button>
                     </div>
