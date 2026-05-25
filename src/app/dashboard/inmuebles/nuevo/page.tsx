@@ -17,21 +17,21 @@ export default function NuevoInmueble() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState({
-        titulo: '',
-        precio: '',
-        direccion: '',
-        descripcion: '',
-        estado: 'en_oferta',
-        habitaciones: '',
-        banos: '',
-        salas: '',
-        cocinas: '',
-        garajes: '',
-        es_comercial: false,
-        en_conjunto: false,
-        administracion_incluida: false,
-        valor_administracion: '',
-        enlace_google_maps: ''
+        owner_name: '',
+        price: '',
+        address: '',
+        description: '',
+        type: 'APARTMENT',
+        rooms: '',
+        bathrooms: '',
+        living_rooms: '',
+        kitchens: '',
+        garages: '',
+        is_commercial: false,
+        in_complex: false,
+        admin_included: false,
+        admin_value: '',
+        google_maps_link: ''
     });
 
     const handleDrag = (e: React.DragEvent) => {
@@ -97,7 +97,7 @@ export default function NuevoInmueble() {
             return;
         }
 
-        if (name === 'precio' || name === 'valor_administracion') {
+        if (name === 'price' || name === 'admin_value') {
             const rawValue = value.replace(/[^0-9]/g, '');
             if (!rawValue) {
                 setFormData(prev => ({ ...prev, [name]: '' }));
@@ -123,7 +123,7 @@ export default function NuevoInmueble() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (!formData.direccion && !formData.enlace_google_maps) {
+        if (!formData.address && !formData.google_maps_link) {
             alert('Por favor provee la Dirección Exacta o un Enlace de Google Maps.');
             return;
         }
@@ -131,33 +131,36 @@ export default function NuevoInmueble() {
         setLoading(true);
 
         try {
+            const token = localStorage.getItem('token');
             const data = new FormData();
-            data.append('titulo', formData.titulo);
-            data.append('precio', formData.precio.replace(/['',]/g, ''));
-            data.append('direccion', formData.direccion || 'Ver enlace de Google Maps adjunto');
-            data.append('descripcion', formData.descripcion);
-            data.append('estado', formData.estado);
+            data.append('owner_name', formData.owner_name);
+            data.append('price', formData.price.replace(/['',]/g, ''));
+            data.append('address', formData.address || 'Ver enlace de Google Maps adjunto');
+            data.append('description', formData.description);
+            data.append('type', formData.type);
 
-            if (formData.habitaciones) data.append('habitaciones', formData.habitaciones);
-            if (formData.banos) data.append('banos', formData.banos);
-            if (formData.salas) data.append('salas', formData.salas);
-            if (formData.cocinas) data.append('cocinas', formData.cocinas);
-            if (formData.garajes) data.append('garajes', formData.garajes);
-            data.append('es_comercial', formData.es_comercial ? 'true' : 'false');
-            data.append('en_conjunto', formData.en_conjunto ? 'true' : 'false');
-            data.append('administracion_incluida', formData.administracion_incluida ? 'true' : 'false');
-            if (formData.valor_administracion) data.append('valor_administracion', formData.valor_administracion.replace(/['',]/g, ''));
-            if (formData.enlace_google_maps) data.append('enlace_google_maps', formData.enlace_google_maps);
+            if (formData.rooms) data.append('rooms', formData.rooms);
+            if (formData.bathrooms) data.append('bathrooms', formData.bathrooms);
+            if (formData.living_rooms) data.append('living_rooms', formData.living_rooms);
+            if (formData.kitchens) data.append('kitchens', formData.kitchens);
+            if (formData.garages) data.append('garages', formData.garages);
+            data.append('is_commercial', formData.is_commercial ? 'true' : 'false');
+            data.append('in_complex', formData.in_complex ? 'true' : 'false');
+            data.append('admin_included', formData.admin_included ? 'true' : 'false');
+            if (formData.admin_value) data.append('admin_value', formData.admin_value.replace(/['',]/g, ''));
+            if (formData.google_maps_link) data.append('google_maps_link', formData.google_maps_link);
 
             // Agregar todas las imágenes
-            imagenes.forEach((imagen) => {
-                data.append('imagenes', imagen);
-            });
-            data.append('portada_index', portadaIndex.toString());
+            if (imagenes.length > 0) {
+               data.append('cover_image', imagenes[portadaIndex]);
+            }
 
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await fetch(`${API_URL}/api/v1/inmuebles/`, {
+            const response = await fetch(`${API_URL}/api/v1/properties/`, {
                 method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
                 body: data,
             });
 
@@ -192,32 +195,32 @@ export default function NuevoInmueble() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2 group">
-                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Título de la Propiedad</label>
-                            <input name="titulo" value={formData.titulo} onChange={handleInputChange} type="text" required placeholder="Ej. Casa campestre..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                            <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Propietario / Título</label>
+                            <input name="owner_name" value={formData.owner_name} onChange={handleInputChange} type="text" required placeholder="Ej. Juan Pérez..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                         </div>
                         <div className="space-y-2 group">
                             <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Precio Mensual ($)</label>
-                            <input name="precio" value={formData.precio} onChange={handleInputChange} type="text" required placeholder="0" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                            <input name="price" value={formData.price} onChange={handleInputChange} type="text" required placeholder="0" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2 group">
                             <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Dirección Exacta (Opcional si usas el mapa)</label>
-                            <input name="direccion" value={formData.direccion} onChange={handleInputChange} type="text" placeholder="Ej. Calle 123..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                            <input name="address" value={formData.address} onChange={handleInputChange} type="text" placeholder="Ej. Calle 123..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                         </div>
                         <div className="space-y-2 group">
                             <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Enlace de Google Maps (Opcional)</label>
-                            <input name="enlace_google_maps" value={formData.enlace_google_maps} onChange={handleInputChange} type="url" placeholder="Ej. https://maps.google.com/..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                            <input name="google_maps_link" value={formData.google_maps_link} onChange={handleInputChange} type="url" placeholder="Ej. https://maps.google.com/..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                         </div>
                         <div className="space-y-2 group relative">
                             <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Estado de la Propiedad</label>
                             <div className="relative">
-                                <select name="estado" value={formData.estado} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all appearance-none cursor-pointer shadow-sm">
-                                    <option value="en_oferta">En Oferta</option>
-                                    <option value="arrendada">Arrendada</option>
-                                    <option value="en_mantenimiento">En Mantenimiento</option>
-                                    <option value="inactiva">Inactiva</option>
+                                <select name="type" value={formData.type} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all appearance-none cursor-pointer shadow-sm">
+                                    <option value="APARTMENT">Apartamento</option>
+                                    <option value="HOUSE">Casa</option>
+                                    <option value="LOCAL">Local comercial</option>
+                                    <option value="WAREHOUSE">Bodega</option>
                                 </select>
                                 <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -232,31 +235,31 @@ export default function NuevoInmueble() {
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
                             <div className="space-y-2 group">
                                 <label className="text-[10px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Habitaciones</label>
-                                <input name="habitaciones" value={formData.habitaciones} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                                <input name="rooms" value={formData.rooms} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                             </div>
                             <div className="space-y-2 group">
                                 <label className="text-[10px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Baños</label>
-                                <input name="banos" value={formData.banos} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                                <input name="bathrooms" value={formData.bathrooms} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                             </div>
                             <div className="space-y-2 group">
                                 <label className="text-[10px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Salas</label>
-                                <input name="salas" value={formData.salas} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                                <input name="living_rooms" value={formData.living_rooms} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                             </div>
                             <div className="space-y-2 group">
                                 <label className="text-[10px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Cocinas</label>
-                                <input name="cocinas" value={formData.cocinas} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                                <input name="kitchens" value={formData.kitchens} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                             </div>
                             <div className="space-y-2 group">
                                 <label className="text-[10px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Garajes</label>
-                                <input name="garajes" value={formData.garajes} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                                <input name="garages" value={formData.garages} onChange={handleInputChange} type="number" min="0" placeholder="0" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                             </div>
                         </div>
                         <div className="mt-8 flex flex-col space-y-4 md:space-y-0 md:flex-row md:items-center md:space-x-8">
                             <label className="flex items-center space-x-3 cursor-pointer group w-max">
                                 <input
-                                    name="es_comercial"
+                                    name="is_commercial"
                                     type="checkbox"
-                                    checked={formData.es_comercial}
+                                    checked={formData.is_commercial}
                                     onChange={handleInputChange}
                                     className="w-5 h-5 rounded border-slate-300 text-slate-900 dark:text-slate-400 focus:ring-slate-900 cursor-pointer shadow-sm"
                                 />
@@ -266,9 +269,9 @@ export default function NuevoInmueble() {
                             </label>
                             <label className="flex items-center space-x-3 cursor-pointer group w-max">
                                 <input
-                                    name="en_conjunto"
+                                    name="in_complex"
                                     type="checkbox"
-                                    checked={formData.en_conjunto}
+                                    checked={formData.in_complex}
                                     onChange={handleInputChange}
                                     className="w-5 h-5 rounded border-slate-300 text-slate-900 dark:text-slate-400 focus:ring-slate-900 cursor-pointer shadow-sm"
                                 />
@@ -278,17 +281,17 @@ export default function NuevoInmueble() {
                             </label>
                         </div>
 
-                        {formData.en_conjunto && (
+                        {formData.in_complex && (
                             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-800/30 p-6 border border-slate-200 dark:border-slate-700/50 rounded-2xl transition-all">
                                 <div className="space-y-2 group">
                                     <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Valor Administración Mensual ($)</label>
-                                    <input name="valor_administracion" value={formData.valor_administracion} onChange={handleInputChange} type="text" placeholder="0" className="w-full px-5 py-3.5 bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
+                                    <input name="admin_value" value={formData.admin_value} onChange={handleInputChange} type="text" placeholder="0" className="w-full px-5 py-3.5 bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm" />
                                 </div>
                                 <label className="flex items-center md:mt-8 space-x-3 cursor-pointer group w-max">
                                     <input
-                                        name="administracion_incluida"
+                                        name="admin_included"
                                         type="checkbox"
-                                        checked={formData.administracion_incluida}
+                                        checked={formData.admin_included}
                                         onChange={handleInputChange}
                                         className="w-5 h-5 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer bg-white shadow-sm"
                                     />
@@ -302,7 +305,7 @@ export default function NuevoInmueble() {
 
                     <div className="space-y-2 group mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
                         <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Descripción Detallada</label>
-                        <textarea name="descripcion" value={formData.descripcion} onChange={handleInputChange} required rows={4} placeholder="Características principales, estado del inmueble, reglas especiales..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm font-light leading-relaxed"></textarea>
+                        <textarea name="description" value={formData.description} onChange={handleInputChange} required rows={4} placeholder="Características principales, estado del inmueble, reglas especiales..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm font-light leading-relaxed"></textarea>
                     </div>
 
                     <div className="space-y-2 relative">

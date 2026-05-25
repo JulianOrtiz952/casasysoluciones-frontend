@@ -4,31 +4,32 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-interface Imagen {
+interface PropertyImage {
     id: number;
-    imagen: string;
-    es_portada: boolean;
+    image: string;
+    is_cover: boolean;
 }
 
 interface Inmueble {
     id: number;
-    titulo: string;
-    descripcion: string;
-    precio: string;
-    direccion: string;
-    imagen: string | null;
-    imagenes?: Imagen[];
-    estado: 'arrendada' | 'en_oferta' | 'en_mantenimiento' | 'inactiva';
-    en_conjunto?: boolean;
-    administracion_incluida?: boolean;
-    valor_administracion?: string;
-    habitaciones?: number | null;
-    banos?: number | null;
-    salas?: number | null;
-    cocinas?: number | null;
-    garajes?: number | null;
-    es_comercial?: boolean;
-    enlace_google_maps?: string | null;
+    code: string;
+    description: string;
+    price: string;
+    address: string;
+    cover_image: string | null;
+    images?: PropertyImage[];
+    status: string;
+    status_display: string;
+    in_complex: boolean;
+    admin_included: boolean;
+    admin_value?: string;
+    rooms?: number | null;
+    bathrooms?: number | null;
+    living_rooms?: number | null;
+    kitchens?: number | null;
+    garages?: number | null;
+    is_commercial?: boolean;
+    google_maps_link?: string | null;
 }
 
 export default function PublicInmuebleDetail() {
@@ -42,11 +43,10 @@ export default function PublicInmuebleDetail() {
         const fetchInmueble = async () => {
             try {
                 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                const res = await fetch(`${API_URL}/api/v1/inmuebles/${id}/`);
+                const res = await fetch(`${API_URL}/api/v1/properties/${id}/`);
                 if (res.ok) {
                     const data: Inmueble = await res.json();
-                    if (data.estado !== 'en_oferta') {
-                        // Si por alguna razón escriben la URL de una que no está en oferta, no la deben ver
+                    if (data.status !== 'AVAILABLE') {
                         router.push('/');
                         return;
                     }
@@ -72,16 +72,12 @@ export default function PublicInmuebleDetail() {
     }
 
     const images = (() => {
-        if (!inmueble || !inmueble.imagenes || inmueble.imagenes.length === 0) {
-            return inmueble?.imagen ? [inmueble.imagen] : [];
+        const galleryImages = inmueble?.images || [];
+        if (galleryImages.length === 0) {
+            return inmueble?.cover_image ? [inmueble.cover_image] : [];
         }
-        const imgs = [...inmueble.imagenes];
-        const portadaIdx = imgs.findIndex(img => img.es_portada);
-        if (portadaIdx > 0) {
-            const portada = imgs.splice(portadaIdx, 1)[0];
-            imgs.unshift(portada);
-        }
-        return imgs.map(i => i.imagen);
+        const sorted = [...galleryImages].sort((a, b) => (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0));
+        return sorted.map(i => i.image);
     })();
 
     const nextImage = () => {
@@ -113,7 +109,7 @@ export default function PublicInmuebleDetail() {
                     {/* Imagen Header */}
                     <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] relative bg-slate-100 dark:bg-slate-800 group rounded-t-3xl overflow-hidden">
                         {images.length > 0 ? (
-                            <img src={images[currentImageIdx]} alt={inmueble.titulo} className="w-full h-full object-cover transition-opacity duration-500" />
+                            <img src={images[currentImageIdx]} alt={inmueble.address} className="w-full h-full object-cover transition-opacity duration-500" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-400">
                                 <span className="font-semibold text-xl">Sin Fotos</span>
@@ -161,72 +157,70 @@ export default function PublicInmuebleDetail() {
                         <div className="flex flex-col lg:flex-row gap-12 relative">
                             {/* Columna Izquierda: Toda la info */}
                             <div className="flex-1 min-w-0">
-                                <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white mb-4 leading-tight">{inmueble.titulo}</h1>
+                                <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white mb-4 leading-tight uppercase tracking-tight">{inmueble.code}</h1>
                                 <p className="text-lg text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-10">
                                     <svg className="w-5 h-5 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                    {inmueble.direccion.match(/^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)/)
-                                        ? "Ubicación sugerida desde Mapa"
-                                        : inmueble.direccion}
+                                    {inmueble.address}
                                 </p>
 
                                 {/* Características */}
                                 <div className="flex flex-wrap gap-4 mb-10">
-                                    {inmueble.habitaciones != null && inmueble.habitaciones > 0 && (
+                                    {inmueble.rooms != null && inmueble.rooms > 0 && (
                                         <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700/50">
                                             <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm">
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                                             </div>
                                             <div>
-                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.habitaciones}</p>
+                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.rooms}</p>
                                                 <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Habitaciones</p>
                                             </div>
                                         </div>
                                     )}
-                                    {inmueble.banos != null && inmueble.banos > 0 && (
+                                    {inmueble.bathrooms != null && inmueble.bathrooms > 0 && (
                                         <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700/50">
                                             <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm">
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
                                             </div>
                                             <div>
-                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.banos}</p>
+                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.bathrooms}</p>
                                                 <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Baños</p>
                                             </div>
                                         </div>
                                     )}
-                                    {inmueble.garajes != null && inmueble.garajes > 0 && (
+                                    {inmueble.garages != null && inmueble.garages > 0 && (
                                         <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700/50">
                                             <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm">
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
                                             </div>
                                             <div>
-                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.garajes}</p>
+                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.garages}</p>
                                                 <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Garajes</p>
                                             </div>
                                         </div>
                                     )}
-                                    {inmueble.salas != null && inmueble.salas > 0 && (
+                                    {inmueble.living_rooms != null && inmueble.living_rooms > 0 && (
                                         <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700/50">
                                             <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm">
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
                                             </div>
                                             <div>
-                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.salas}</p>
+                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.living_rooms}</p>
                                                 <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Salas</p>
                                             </div>
                                         </div>
                                     )}
-                                    {inmueble.cocinas != null && inmueble.cocinas > 0 && (
+                                    {inmueble.kitchens != null && inmueble.kitchens > 0 && (
                                         <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700/50">
                                             <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm">
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"></path></svg>
                                             </div>
                                             <div>
-                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.cocinas}</p>
+                                                <p className="text-xl font-black text-slate-900 dark:text-white leading-none">{inmueble.kitchens}</p>
                                                 <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Cocinas</p>
                                             </div>
                                         </div>
                                     )}
-                                    {inmueble.es_comercial && (
+                                    {inmueble.is_commercial && (
                                         <div className="flex items-center gap-4 bg-slate-900 dark:bg-indigo-900/40 px-5 py-4 rounded-2xl border border-slate-800 dark:border-indigo-800/50 shadow-sm">
                                             <div className="w-10 h-10 rounded-full bg-slate-800 dark:bg-indigo-800/50 flex items-center justify-center text-white shadow-sm">
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
@@ -239,7 +233,7 @@ export default function PublicInmuebleDetail() {
                                 </div>
 
                             <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line text-lg mb-10">
-                                {inmueble.descripcion}
+                                {inmueble.description}
                             </div>
 
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Ubicación en el Mapa</h3>
@@ -249,15 +243,15 @@ export default function PublicInmuebleDetail() {
                                 <div className="w-full h-[350px] relative">
                                     <iframe
                                         className="absolute top-0 left-0 w-full h-full"
-                                        src={`https://maps.google.com/maps?q=${encodeURIComponent(inmueble.direccion)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                                        src={`https://maps.google.com/maps?q=${encodeURIComponent(inmueble.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
                                         frameBorder="0"
                                         scrolling="no"
                                         marginHeight={0}
                                         marginWidth={0}
-                                        title={`Mapa de ubicación para ${inmueble.direccion}`}
+                                        title={`Mapa de ubicación para ${inmueble.address}`}
                                     ></iframe>
                                 </div>
-                                {inmueble.enlace_google_maps && (
+                                {inmueble.google_maps_link && (
                                     <div className="bg-rose-50 dark:bg-slate-900 border-t border-rose-100 dark:border-slate-700 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center shrink-0">
@@ -266,7 +260,7 @@ export default function PublicInmuebleDetail() {
                                             <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">El propietario ha compartido una ruta exacta.</p>
                                         </div>
                                         <a
-                                            href={inmueble.enlace_google_maps}
+                                            href={inmueble.google_maps_link}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl transition shadow-md shadow-rose-500/20 whitespace-nowrap"
@@ -277,14 +271,14 @@ export default function PublicInmuebleDetail() {
                                 )}
                             </div>
 
-                        {inmueble.imagenes && inmueble.imagenes.length > 0 && (
+                        {inmueble.images && inmueble.images.length > 0 && (
                             <div className="mt-12">
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Galería de Imágenes</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    {inmueble.imagenes.map((img) => (
+                                    {inmueble.images.map((img) => (
                                         <div key={img.id} className="relative rounded-2xl overflow-hidden h-48 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition">
-                                            <a href={img.imagen} target="_blank" rel="noopener noreferrer">
-                                                <img src={img.imagen} alt="Galería" className="w-full h-full object-cover hover:scale-105 transition duration-500" />
+                                            <a href={img.image} target="_blank" rel="noopener noreferrer">
+                                                <img src={img.image} alt="Galería" className="w-full h-full object-cover hover:scale-105 transition duration-500" />
                                             </a>
                                         </div>
                                     ))}
@@ -297,20 +291,20 @@ export default function PublicInmuebleDetail() {
                             <div className="w-full lg:w-[380px] shrink-0">
                                 <div className="bg-slate-900 dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-800 dark:border-slate-700 shadow-2xl shadow-slate-900/10 lg:sticky lg:top-8 mt-4 lg:mt-0">
                                     <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Precio Mensual</p>
-                                    <p className="text-4xl sm:text-5xl font-black text-white mb-8">${parseFloat(inmueble.precio).toLocaleString()}</p>
+                                    <p className="text-4xl sm:text-5xl font-black text-white mb-8">${parseFloat(inmueble.price).toLocaleString()}</p>
 
-                                    {inmueble.en_conjunto && (
+                                    {inmueble.in_complex && (
                                         <div className="mb-8 pt-6 border-t border-slate-700/50">
                                             <p className="text-xs font-semibold text-slate-300 mb-2 flex items-center gap-2">
                                                 <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                                                 Conjunto Cerrado
                                             </p>
-                                            {inmueble.valor_administracion && parseFloat(inmueble.valor_administracion) > 0 && (
+                                            {inmueble.admin_value && parseFloat(inmueble.admin_value) > 0 && (
                                                 <div className="flex flex-col mt-2">
                                                     <p className="text-sm text-slate-300">
-                                                        Admón: <span className="font-bold text-white">${parseFloat(inmueble.valor_administracion).toLocaleString()}</span>
+                                                        Admón: <span className="font-bold text-white">${parseFloat(inmueble.admin_value).toLocaleString()}</span>
                                                     </p>
-                                                    {inmueble.administracion_incluida && (
+                                                    {inmueble.admin_included && (
                                                         <span className="mt-2 text-[10px] font-bold px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-md w-max inline-block">
                                                             Incluida en el canon
                                                         </span>
@@ -322,7 +316,7 @@ export default function PublicInmuebleDetail() {
                                     
                                     <div className="flex flex-col gap-4">
                                         <a
-                                            href={`https://wa.me/573105769214?text=${encodeURIComponent(`Hola, estoy interesado en la propiedad: ${inmueble.titulo} ubicada en ${inmueble.direccion}.`)}`}
+                                            href={`https://wa.me/573105769214?text=${encodeURIComponent(`Hola, estoy interesado en la propiedad: ${inmueble.code} ubicada en ${inmueble.address}.`)}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#25D366] hover:bg-[#1DA851] text-white font-black rounded-xl transition-all shadow-[0_4px_14px_0_rgba(37,211,102,0.39)] hover:shadow-[0_6px_20px_rgba(37,211,102,0.23)] hover:-translate-y-0.5 active:scale-95 text-[15px]"

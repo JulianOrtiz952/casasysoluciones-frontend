@@ -4,40 +4,38 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTheme } from './theme-provider';
 
-interface Imagen {
+interface PropertyImage {
   id: number;
-  imagen: string;
-  es_portada: boolean;
+  image: string;
+  is_cover: boolean;
 }
 
 interface Inmueble {
   id: number;
-  titulo: string;
-  descripcion: string;
-  precio: string;
-  direccion: string;
-  imagen: string | null;
-  imagenes?: Imagen[];
-  estado: 'arrendada' | 'en_oferta' | 'en_mantenimiento' | 'inactiva';
-  en_conjunto?: boolean;
-  administracion_incluida?: boolean;
-  valor_administracion?: string | null;
+  code: string;
+  address: string;
+  description: string;
+  price: string;
+  cover_image: string | null;
+  images?: PropertyImage[];
+  status: string;
+  status_display: string;
+  in_complex: boolean;
+  admin_included: boolean;
+  admin_value: string | null;
 }
 
 function InmuebleCard({ inmueble }: { inmueble: Inmueble }) {
   const [currentIdx, setCurrentIdx] = useState(0);
 
   const images = (() => {
-    if (!inmueble.imagenes || inmueble.imagenes.length === 0) {
-      return inmueble.imagen ? [inmueble.imagen] : [];
+    const galleryImages = inmueble.images || [];
+    if (galleryImages.length === 0) {
+      return inmueble.cover_image ? [inmueble.cover_image] : [];
     }
-    const imgs = [...inmueble.imagenes];
-    const portadaIdx = imgs.findIndex(img => img.es_portada);
-    if (portadaIdx > 0) {
-      const portada = imgs.splice(portadaIdx, 1)[0];
-      imgs.unshift(portada);
-    }
-    return imgs.map(i => i.imagen);
+    // Ensure cover is first
+    const sorted = [...galleryImages].sort((a, b) => (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0));
+    return sorted.map(i => i.image);
   })();
 
   const nextImg = (e: React.MouseEvent) => {
@@ -55,7 +53,7 @@ function InmuebleCard({ inmueble }: { inmueble: Inmueble }) {
       <div className="h-64 overflow-hidden relative group bg-slate-100 dark:bg-slate-800">
         <Link href={`/inmuebles/${inmueble.id}`} className="block w-full h-full">
           {images.length > 0 ? (
-            <img src={images[currentIdx]} alt={inmueble.titulo} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            <img src={images[currentIdx]} alt={inmueble.address} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-400">
               <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -87,31 +85,27 @@ function InmuebleCard({ inmueble }: { inmueble: Inmueble }) {
       </div>
 
       <div className="p-6 flex flex-col flex-grow">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white line-clamp-1 group-hover/card:text-rose-600 transition-colors">{inmueble.titulo}</h3>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white line-clamp-1 group-hover/card:text-rose-600 transition-colors uppercase tracking-tight">{inmueble.code}</h3>
         <div className="flex gap-2 mt-2 items-start">
           <svg className="w-4 h-4 mt-0.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-          <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1 w-full font-medium" title={inmueble.direccion}>
-            {inmueble.direccion.match(/^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)/)
-              ? "Ubicación sugerida desde Mapa"
-              : inmueble.direccion}
+          <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1 w-full font-medium" title={inmueble.address}>
+            {inmueble.address}
           </p>
         </div>
         
         <div className="my-5 h-px bg-slate-100 dark:bg-slate-800"></div>
         
-        <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-3 min-h-[60px] flex-grow leading-relaxed font-light">{inmueble.descripcion}</p>
-        
         <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <span className="text-[11px] uppercase font-bold tracking-wider text-slate-400 block mb-1">Precio Mensual</span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">${parseFloat(inmueble.precio).toLocaleString()}</span>
-            {inmueble.en_conjunto && (
+            <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">${parseFloat(inmueble.price).toLocaleString()}</span>
+            {inmueble.in_complex && (
               <div className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                 <span className="font-medium text-slate-400">Administración: </span>
-                {inmueble.administracion_incluida ? (
+                {inmueble.admin_included ? (
                   <span className="text-emerald-500 font-medium bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded">Incluida</span>
                 ) : (
-                  <span className="font-semibold text-slate-600 dark:text-slate-300">+ ${inmueble.valor_administracion ? parseFloat(inmueble.valor_administracion).toLocaleString() : '0'}</span>
+                  <span className="font-semibold text-slate-600 dark:text-slate-300">+ ${inmueble.admin_value ? parseFloat(inmueble.admin_value).toLocaleString() : '0'}</span>
                 )}
               </div>
             )}
@@ -134,11 +128,13 @@ export default function Home() {
     const fetchOfertas = async () => {
       try {
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const res = await fetch(`${API_URL}/api/v1/inmuebles/`);
+        const res = await fetch(`${API_URL}/api/v1/properties/`);
         if (res.ok) {
-          const data: Inmueble[] = await res.json();
-          // Filter out properties that are not 'en_oferta'
-          const ofertas = data.filter(item => item.estado === 'en_oferta');
+          const rawData = await res.json();
+          const items: Inmueble[] = Array.isArray(rawData) ? rawData : (rawData.results || []);
+          
+          // Filter out properties that are not 'AVAILABLE' (modern status)
+          const ofertas = items.filter(item => item.status === 'AVAILABLE');
           setInmuebles(ofertas);
         }
       } catch (error) {

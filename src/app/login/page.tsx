@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 export default function LoginPage() {
     const router = useRouter();
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
     const [loading, setLoading] = useState(false);
@@ -17,10 +17,11 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1/'}token/`, {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const res = await fetch(`${API_URL}/api/v1/token/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ email, password })
             });
 
             if (res.ok) {
@@ -71,14 +72,14 @@ export default function LoginPage() {
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div className="space-y-2 group">
                         <label className="text-[11px] font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
-                            Usuario
+                            Correo Electrónico
                         </label>
                         <div className="relative">
                             <input
-                                type="text"
-                                placeholder="Ingresa tu usuario"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                type="email"
+                                placeholder="tu@ejemplo.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white text-slate-800 transition-all shadow-sm"
                             />
                         </div>

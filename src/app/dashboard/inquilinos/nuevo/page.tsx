@@ -26,20 +26,39 @@ export default function NuevoInquilino() {
 
         try {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await fetch(`${API_URL}/api/v1/inquilinos/`, {
+            const token = localStorage.getItem('token');
+            
+            // Separamos nombre y apellido básico
+            const names = formData.nombre.trim().split(' ');
+            const first_name = names[0] || '';
+            const last_name = names.slice(1).join(' ') || '';
+
+            const payload = {
+                first_name,
+                last_name,
+                email: formData.email,
+                phone: formData.telefono,
+                document_number: formData.identificacion,
+                role: 'TENANT',
+                password: 'Cambiar123*', // Password temporal por defecto
+                is_active: true
+            };
+
+            const response = await fetch(`${API_URL}/api/v1/usuarios/`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
 
             if (response.ok) {
                 router.push('/dashboard/inquilinos');
             } else {
-                const errorData = await response.text();
+                const errorData = await response.json();
                 console.error("Error al guardar:", errorData);
-                alert("Hubo un error al registrar el inquilino.");
+                alert(errorData.error || "Hubo un error al registrar el inquilino. Revisa que el email no esté duplicado.");
             }
         } catch (error) {
             console.error("Error de red:", error);
