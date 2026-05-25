@@ -77,7 +77,7 @@ export default function NuevoInventarioPage() {
 
             if (propRes.ok) {
                 const data = await propRes.json();
-                setProperties(data);
+                setProperties(Array.isArray(data) ? data : (data.results || []));
             }
             if (tenantRes.ok) {
                 const data = await tenantRes.json();
@@ -336,6 +336,33 @@ export default function NuevoInventarioPage() {
                                         <option value="">Seleccionar arrendatario...</option>
                                         {tenants.map(t => <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>)}
                                     </select>
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">¿Es el inventario inicial?</label>
+                                <div className="flex gap-4">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setFormData({...formData, inventory_type: 'INITIAL'})}
+                                        className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold border transition-all ${
+                                            formData.inventory_type === 'INITIAL' 
+                                                ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-600' 
+                                                : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        Sí, Inicial (Asociar inquilino)
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setFormData({...formData, inventory_type: 'FINAL'})}
+                                        className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold border transition-all ${
+                                            formData.inventory_type === 'FINAL' 
+                                                ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-600' 
+                                                : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        No, Final
+                                    </button>
                                 </div>
                             </div>
                             <div className="space-y-2">

@@ -70,22 +70,63 @@ export default function DashboardInmuebleDetail() {
         const fetchData = async () => {
             try {
                 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                const token = localStorage.getItem('token');
 
-                // Fetch Inmueble
-                const resInm = await fetch(`${API_URL}/api/v1/inmuebles/${id}/`);
-                if (resInm.ok) setInmueble(await resInm.json());
-                else { router.push('/dashboard/inmuebles'); return; }
+                // Fetch Inmueble (Property)
+                const resInm = await fetch(`${API_URL}/api/v1/properties/${id}/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (resInm.ok) {
+                    const data = await resInm.json();
+                    const mappedInmueble: Inmueble = {
+                        id: data.id,
+                        titulo: data.code,
+                        direccion: data.address,
+                        precio: data.price,
+                        descripcion: data.description || '',
+                        imagen: data.cover_image,
+                        imagenes: data.images?.map((img: any) => ({
+                            id: img.id,
+                            imagen: img.image,
+                            es_portada: img.is_cover
+                        })) || [],
+                        estado: data.status === 'AVAILABLE' ? 'en_oferta' :
+                                data.status === 'RENTED' ? 'arrendada' :
+                                data.status === 'MAINTENANCE' ? 'en_mantenimiento' : 'inactiva',
+                        en_conjunto: data.in_complex,
+                        administracion_incluida: data.admin_included,
+                        valor_administracion: data.admin_value,
+                        habitaciones: data.rooms,
+                        banos: data.bathrooms,
+                        salas: data.living_rooms,
+                        cocinas: data.kitchens,
+                        garajes: data.garages,
+                        es_comercial: data.is_commercial
+                    };
+                    setInmueble(mappedInmueble);
+                } else { 
+                    router.push('/dashboard/inmuebles'); 
+                    return; 
+                }
 
                 // Fetch Historial (filtramos los de este inmueble en frontend por simplicidad)
-                const resHist = await fetch(`${API_URL}/api/v1/historial_alquiler/`);
+                const resHist = await fetch(`${API_URL}/api/v1/historial_alquiler/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (resHist.ok) {
-                    const allHist: Historial[] = await resHist.json();
+                    const data = await resHist.json();
+                    const allHist: Historial[] = Array.isArray(data) ? data : (data.results || []);
                     setHistorial(allHist.filter(h => h.inmueble === Number(id)));
                 }
 
                 // Fetch Inquilinos para el select
-                const resInq = await fetch(`${API_URL}/api/v1/inquilinos/`);
-                if (resInq.ok) setInquilinos(await resInq.json());
+                const resInq = await fetch(`${API_URL}/api/v1/inquilinos/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (resInq.ok) {
+                    const data = await resInq.json();
+                    setInquilinos(Array.isArray(data) ? data : (data.results || []));
+                }
 
             } catch (error) {
                 console.error("Error al cargar datos:", error);
@@ -104,10 +145,15 @@ export default function DashboardInmuebleDetail() {
         try {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+            const token = localStorage.getItem('token');
+
             // 1. Crear el historial
             const resHistorial = await fetch(`${API_URL}/api/v1/historial_alquiler/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     inmueble: inmueble.id,
                     inquilino: inquilinoSeleccionado,
@@ -119,10 +165,13 @@ export default function DashboardInmuebleDetail() {
             if (resHistorial.ok) {
                 // 2. Cambiar el estado de la casa automáticamente a "Arrendada" si no lo estaba
                 if (inmueble.estado !== 'arrendada') {
-                    await fetch(`${API_URL}/api/v1/inmuebles/${id}/`, {
+                    await fetch(`${API_URL}/api/v1/properties/${id}/`, {
                         method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ estado: 'arrendada' })
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ status: 'RENTED' })
                     });
                 }
                 // Refrescar página para ver cambios

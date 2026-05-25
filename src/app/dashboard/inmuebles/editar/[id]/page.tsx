@@ -51,13 +51,16 @@ export default function EditarInmueble() {
         const fetchDatos = async () => {
             try {
                 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                const token = localStorage.getItem('token');
 
                 // Cargar inmueble
-                const resInm = await fetch(`${API_URL}/api/v1/inmuebles/${id}/`);
+                const resInm = await fetch(`${API_URL}/api/v1/properties/${id}/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (resInm.ok) {
                     const data = await resInm.json();
 
-                    const rawValue = String(data.precio || '').replace(/[^0-9]/g, '');
+                    const rawValue = String(data.price || '').replace(/[^0-9]/g, '');
                     let formattedPrecio = rawValue;
                     if (rawValue.length > 6) {
                         const millions = rawValue.slice(0, -6).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -70,7 +73,7 @@ export default function EditarInmueble() {
                         formattedPrecio = `${thousands},${hundreds}`;
                     }
 
-                    const rawValueAdmin = String(data.valor_administracion || '').replace(/[^0-9]/g, '');
+                    const rawValueAdmin = String(data.admin_value || '').replace(/[^0-9]/g, '');
                     let formattedAdmin = rawValueAdmin;
                     if (rawValueAdmin.length > 6) {
                         const millionsAdmin = rawValueAdmin.slice(0, -6).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -85,21 +88,31 @@ export default function EditarInmueble() {
 
                     setFormData(prev => ({
                         ...prev,
-                        titulo: data.titulo,
+                        titulo: data.code,
                         precio: formattedPrecio,
-                        direccion: data.direccion,
-                        descripcion: data.descripcion,
-                        estado: data.estado,
-                        en_conjunto: data.en_conjunto || false,
-                        administracion_incluida: data.administracion_incluida || false,
+                        direccion: data.address,
+                        descripcion: data.description || '',
+                        estado: data.status === 'AVAILABLE' ? 'en_oferta' :
+                                data.status === 'RENTED' ? 'arrendada' :
+                                data.status === 'MAINTENANCE' ? 'en_mantenimiento' : 'inactiva',
+                        en_conjunto: data.in_complex || false,
+                        administracion_incluida: data.admin_included || false,
                         valor_administracion: formattedAdmin,
-                        enlace_google_maps: data.enlace_google_maps || ''
+                        enlace_google_maps: data.google_maps_link || ''
                     }));
-                    if (data.imagenes) setRemoteImages(data.imagenes);
+                    
+                    const mappedImages = data.images?.map((img: any) => ({
+                        id: img.id,
+                        imagen: img.image,
+                        es_portada: img.is_cover
+                    })) || (data.cover_image ? [{ id: 0, imagen: data.cover_image, es_portada: true }] : []);
+                    setRemoteImages(mappedImages);
                 }
 
                 // Cargar inquilinos por si acaso edita a estado 'Arrendada'
-                const resInq = await fetch(`${API_URL}/api/v1/inquilinos/`);
+                const resInq = await fetch(`${API_URL}/api/v1/inquilinos/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (resInq.ok) {
                     setInquilinos(await resInq.json());
                 }
@@ -197,29 +210,35 @@ export default function EditarInmueble() {
         setSaving(true);
 
         try {
+            const token = localStorage.getItem('token');
             const data = new FormData();
-            data.append('titulo', formData.titulo);
-            data.append('precio', formData.precio.replace(/['',]/g, ''));
-            data.append('direccion', formData.direccion || 'Ver enlace de Google Maps adjunto');
-            data.append('descripcion', formData.descripcion);
-            data.append('estado', formData.estado);
-            data.append('en_conjunto', formData.en_conjunto ? 'true' : 'false');
-            data.append('administracion_incluida', formData.administracion_incluida ? 'true' : 'false');
-            if (formData.valor_administracion) data.append('valor_administracion', formData.valor_administracion.replace(/['',]/g, ''));
-            if (formData.enlace_google_maps) data.append('enlace_google_maps', formData.enlace_google_maps);
+            data.append('code', formData.titulo); // Map legacy title to code
+            data.append('price', formData.precio.replace(/['',]/g, ''));
+            data.append('address', formData.direccion || 'Ver enlace de Google Maps adjunto');
+            data.append('description', formData.descripcion);
+            
+            // Map legacy state to modern status
+            const modernStatus = formData.estado === 'en_oferta' ? 'AVAILABLE' :
+                                 formData.estado === 'arrendada' ? 'RENTED' :
+                                 formData.estado === 'en_mantenimiento' ? 'MAINTENANCE' : 'AVAILABLE';
+            data.append('status', modernStatus);
+            
+            data.append('in_complex', formData.en_conjunto ? 'true' : 'false');
+            data.append('admin_included', formData.administracion_incluida ? 'true' : 'false');
+            if (formData.valor_administracion) data.append('admin_value', formData.valor_administracion.replace(/['',]/g, ''));
+            if (formData.enlace_google_maps) data.append('google_maps_link', formData.enlace_google_maps);
 
-            // Imágenes nuevas
+            // Nuevas imágenes
             if (imagenes.length > 0) {
-                data.append('reemplazar_imagenes', 'true');
-                imagenes.forEach((imagen) => {
-                    data.append('imagenes', imagen);
-                });
-                data.append('portada_index', portadaIndex.toString());
+                data.append('cover_image', imagenes[portadaIndex]);
             }
 
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await fetch(`${API_URL}/api/v1/inmuebles/${id}/`, {
+            const response = await fetch(`${API_URL}/api/v1/properties/${id}/`, {
                 method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
                 body: data,
             });
 
@@ -228,7 +247,10 @@ export default function EditarInmueble() {
                 if (formData.estado === 'arrendada' && formData.inquilinoId) {
                     await fetch(`${API_URL}/api/v1/historial_alquiler/`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
                         body: JSON.stringify({
                             inmueble: id,
                             inquilino: formData.inquilinoId,
