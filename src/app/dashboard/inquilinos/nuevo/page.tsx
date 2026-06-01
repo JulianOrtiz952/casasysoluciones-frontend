@@ -60,7 +60,7 @@ export default function NuevoInquilino() {
                 phone: formData.telefono,
                 document_number: formData.identificacion,
                 role: 'TENANT',
-                password: 'Cambiar123*', // Password temporal por defecto
+                password: formData.identificacion, // La clave inicial es la identificación (CC)
                 is_active: true
             };
 

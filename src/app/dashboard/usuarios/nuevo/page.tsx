@@ -136,11 +136,11 @@ export default function NuevoUsuario() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2 group">
                             <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Nombre</label>
-                            <input name="nombre" value={formData.nombre} onChange={handleInputChange} type="text" placeholder="Ej. Juan" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
+                            <input name="nombre" value={formData.nombre} onChange={handleInputChange} type="text" required placeholder="Ej. Juan" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
                         </div>
                         <div className="space-y-2 group">
                             <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Apellido</label>
-                            <input name="apellido" value={formData.apellido} onChange={handleInputChange} type="text" placeholder="Ej. Pérez" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
+                            <input name="apellido" value={formData.apellido} onChange={handleInputChange} type="text" required placeholder="Ej. Pérez" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
                         </div>
                     </div>
 
@@ -151,14 +151,14 @@ export default function NuevoUsuario() {
                         </div>
                         <div className="space-y-2 group">
                             <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Teléfono Celular</label>
-                            <input name="telefono" value={formData.telefono} onChange={handleInputChange} type="text" placeholder="Ej. 3100000000" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
+                            <input name="telefono" value={formData.telefono} onChange={handleInputChange} type="text" required placeholder="Ej. 3100000000" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2 group">
                             <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Tipo de Documento</label>
-                            <select name="documentoTipo" value={formData.documentoTipo} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm">
+                            <select name="documentoTipo" value={formData.documentoTipo} onChange={handleInputChange} required className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm">
                                 <option value="CC">Cédula de ciudadanía</option>
                                 <option value="CE">Cédula de extranjería</option>
                                 <option value="PASSPORT">Pasaporte</option>
@@ -167,21 +167,21 @@ export default function NuevoUsuario() {
                         </div>
                         <div className="space-y-2 group">
                             <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Nº de Identificación</label>
-                            <input name="documentoNumero" value={formData.documentoNumero} onChange={handleInputChange} type="text" placeholder="Ej. 10203040" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
+                            <input name="documentoNumero" value={formData.documentoNumero} onChange={handleInputChange} type="text" required placeholder="Ej. 10203040" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2 group">
                             <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Rol en el Sistema</label>
-                            <select name="rol" value={formData.rol} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm">
+                            <select name="rol" value={formData.rol} onChange={handleInputChange} required className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm">
                                 <option value="ASSISTANT">Asistente Administrativo</option>
                                 <option value="ADMIN">Administrador</option>
                             </select>
                         </div>
                         <div className="space-y-2 group">
                             <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Contraseña (Opcional)</label>
-                            <input name="password" value={formData.password} onChange={handleInputChange} type="password" placeholder="Por defecto será el Nº de Identificación o por defecto" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
+                            <input name="password" value={formData.password} onChange={handleInputChange} type="password" placeholder="Por defecto será el Nº de Identificación" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm" />
                         </div>
                     </div>
 
