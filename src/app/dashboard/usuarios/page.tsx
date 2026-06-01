@@ -59,12 +59,13 @@ export default function UsuariosPage() {
                     <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Personal Administrativo</h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Control de acceso y gestión de roles para el equipo interno.</p>
                 </div>
-                <button
+                <Link
+                    href="/dashboard/usuarios/nuevo"
                     className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-black rounded-xl transition-all shadow-lg shadow-rose-600/20 flex items-center gap-2 uppercase tracking-widest"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>
                     Nuevo Usuario
-                </button>
+                </Link>
             </div>
 
             {/* Stats */}
