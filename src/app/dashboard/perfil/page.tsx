@@ -48,7 +48,8 @@ export default function Perfil() {
                 }
             }
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1/'}auth/change-password/`, {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const res = await fetch(`${API_URL}/api/v1/auth/change-password/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
