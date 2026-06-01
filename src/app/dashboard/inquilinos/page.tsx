@@ -22,28 +22,209 @@ export default function InquilinosPage() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'ADMIN' | 'ASSISTANT' | 'TENANT'>('all');
 
-    useEffect(() => {
-        const fetchUsuarios = async () => {
-            try {
-                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                const token = localStorage.getItem('token');
-                // Buscamos todos los usuarios para la gestión administrativa
-                const res = await fetch(`${API_URL}/api/v1/usuarios/`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setUsuarios(Array.isArray(data) ? data : (data.results || []));
-                }
-            } catch (error) {
-                console.error("Error al cargar usuarios", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
+    const [editForm, setEditForm] = useState({
+        first_name: '',
+        last_name: '',
+        phone: '',
+        document_type: '',
+        document_number: '',
+        role: 'TENANT' as 'ADMIN' | 'ASSISTANT' | 'TENANT',
+        is_active: true,
+        password: ''
+    });
+    const [submitting, setSubmitting] = useState(false);
+    const [currentUserEmail, setCurrentUserEmail] = useState('');
 
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            const decoded = parseJwt(token);
+            if (decoded && decoded.email) {
+                setCurrentUserEmail(decoded.email);
+            }
+        }
+    }, []);
+
+    function parseJwt(token: string) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    const isCurrentUser = (email: string) => {
+        return !!(currentUserEmail && email && currentUserEmail.toLowerCase() === email.toLowerCase());
+    };
+
+    const handleEditClick = (usuario: Usuario) => {
+        setEditingUsuario(usuario);
+        setEditForm({
+            first_name: usuario.first_name || '',
+            last_name: usuario.last_name || '',
+            phone: usuario.phone || '',
+            document_type: usuario.document_type || 'CC',
+            document_number: usuario.document_number || '',
+            role: usuario.role,
+            is_active: usuario.is_active,
+            password: ''
+        });
+    };
+
+    const fetchUsuarios = async () => {
+        setLoading(true);
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/v1/usuarios/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setUsuarios(Array.isArray(data) ? data : (data.results || []));
+            }
+        } catch (error) {
+            console.error("Error al cargar usuarios", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchUsuarios();
     }, []);
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingUsuario) return;
+        setSubmitting(true);
+
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const token = localStorage.getItem('token');
+
+            const payload: Record<string, any> = {
+                first_name: editForm.first_name.trim(),
+                last_name: editForm.last_name.trim(),
+                phone: editForm.phone.trim(),
+                document_type: editForm.document_type,
+                document_number: editForm.document_number.trim() || null,
+                role: editForm.role,
+            };
+
+            if (editForm.password) {
+                payload.password = editForm.password;
+            }
+
+            const response = await fetch(`${API_URL}/api/v1/usuarios/${editingUsuario.id}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.ok) {
+                if (editForm.is_active !== editingUsuario.is_active) {
+                    try {
+                        if (!editForm.is_active) {
+                            let deactivateRes = await fetch(`${API_URL}/api/v1/users/${editingUsuario.id}/deactivate/`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ confirm: false }),
+                            });
+
+                            if (deactivateRes.status === 409) {
+                                const errorData = await deactivateRes.json();
+                                const msg = errorData.message || "El usuario tiene tickets o inventarios pendientes. ¿Deseas desactivarlo de todos modos?";
+                                if (confirm(msg)) {
+                                    deactivateRes = await fetch(`${API_URL}/api/v1/users/${editingUsuario.id}/deactivate/`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Authorization': `Bearer ${token}`
+                                        },
+                                        body: JSON.stringify({ confirm: true }),
+                                    });
+                                } else {
+                                    alert("El usuario fue modificado pero la desactivación fue cancelada.");
+                                    setEditingUsuario(null);
+                                    fetchUsuarios();
+                                    return;
+                                }
+                            }
+
+                            if (!deactivateRes.ok) {
+                                const errData = await deactivateRes.json();
+                                alert(`Error al desactivar el usuario: ${errData.detail || errData.message || 'Error desconocido'}`);
+                            }
+                        } else {
+                            const reactivateRes = await fetch(`${API_URL}/api/v1/users/${editingUsuario.id}/reactivate/`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({}),
+                            });
+                            if (!reactivateRes.ok) {
+                                const errData = await reactivateRes.json();
+                                alert(`Error al activar el usuario: ${errData.detail || errData.message || 'Error desconocido'}`);
+                            }
+                        }
+                    } catch (statusError) {
+                        console.error("Error al actualizar el estado de actividad del usuario:", statusError);
+                        alert("El usuario se actualizó, pero hubo un error al cambiar su estado de activación/desactivación.");
+                    }
+                }
+                setEditingUsuario(null);
+                fetchUsuarios();
+            } else {
+                const errorData = await response.json();
+                console.error("Error al actualizar usuario:", errorData);
+                
+                let errorMsg = "Hubo un error al actualizar el usuario.";
+                if (errorData && typeof errorData === 'object') {
+                    if (errorData.error) {
+                        const err = errorData.error;
+                        if (typeof err === 'string') {
+                            errorMsg = err;
+                        } else if (typeof err === 'object') {
+                            if (err.details && typeof err.details === 'object' && Object.keys(err.details).length > 0) {
+                                errorMsg = Object.entries(err.details)
+                                    .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+                                    .join('\n');
+                            } else if (err.message) {
+                                errorMsg = err.message;
+                            }
+                        }
+                    } else if (errorData.detail) {
+                        errorMsg = errorData.detail;
+                    } else {
+                        errorMsg = Object.entries(errorData)
+                            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+                            .join('\n');
+                    }
+                }
+                alert(errorMsg);
+            }
+        } catch (error) {
+            console.error("Error de red:", error);
+            alert("Error de conexión con el servidor.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const filtered = usuarios.filter(u => filter === 'all' || u.role === filter);
 
@@ -177,8 +358,11 @@ export default function InquilinosPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button className="p-2 text-slate-400 hover:text-rose-600 transition-colors">
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                        <button
+                                            onClick={() => handleEditClick(u)}
+                                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-black rounded-lg transition uppercase tracking-widest"
+                                        >
+                                            Editar
                                         </button>
                                     </td>
                                 </tr>
@@ -199,6 +383,149 @@ export default function InquilinosPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Edit Modal */}
+            {editingUsuario && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xl p-8 overflow-y-auto max-h-[90vh] animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-950 dark:text-white">Editar Usuario</h3>
+                                <p className="text-slate-400 text-xs mt-1">Modificando a: {editingUsuario.email}</p>
+                            </div>
+                            <button
+                                onClick={() => setEditingUsuario(null)}
+                                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleEditSubmit} className="space-y-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Nombre</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={editForm.first_name}
+                                        onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Apellido</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={editForm.last_name}
+                                        onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Teléfono</label>
+                                    <input
+                                        type="text"
+                                        value={editForm.phone}
+                                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Tipo de Documento</label>
+                                    <select
+                                        value={editForm.document_type}
+                                        onChange={(e) => setEditForm({ ...editForm, document_type: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
+                                    >
+                                        <option value="CC">Cédula de ciudadanía</option>
+                                        <option value="CE">Cédula de extranjería</option>
+                                        <option value="PASSPORT">Pasaporte</option>
+                                        <option value="NIT">NIT</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Nº de Identificación</label>
+                                    <input
+                                        type="text"
+                                        value={editForm.document_number}
+                                        onChange={(e) => setEditForm({ ...editForm, document_number: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Rol en el Sistema</label>
+                                    <select
+                                        disabled={isCurrentUser(editingUsuario.email)}
+                                        value={editForm.role}
+                                        onChange={(e) => setEditForm({ ...editForm, role: e.target.value as any })}
+                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        <option value="TENANT">Arrendatario</option>
+                                        <option value="ASSISTANT">Asistente Administrativo</option>
+                                        <option value="ADMIN">Administrador</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Estado de la cuenta</label>
+                                    <select
+                                        disabled={isCurrentUser(editingUsuario.email)}
+                                        value={editForm.is_active ? 'true' : 'false'}
+                                        onChange={(e) => setEditForm({ ...editForm, is_active: e.target.value === 'true' })}
+                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        <option value="true">Activo</option>
+                                        <option value="false">Inactivo</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Nueva Contraseña (Opcional)</label>
+                                    <input
+                                        type="password"
+                                        placeholder="Dejar vacío para no cambiar"
+                                        value={editForm.password}
+                                        onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
+                                    />
+                                </div>
+                            </div>
+
+                            {isCurrentUser(editingUsuario.email) && (
+                                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                    * No puedes cambiar tu propio rol ni desactivar tu propia cuenta.
+                                </p>
+                            )}
+
+                            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingUsuario(null)}
+                                    className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 disabled:bg-rose-400 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-rose-600/20"
+                                >
+                                    {submitting ? 'Guardando...' : 'Guardar Cambios'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

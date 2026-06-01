@@ -92,7 +92,6 @@ export default function UsuariosPage() {
                 document_type: editForm.document_type,
                 document_number: editForm.document_number.trim() || null,
                 role: editForm.role,
-                is_active: editForm.is_active
             };
 
             if (editForm.password) {
@@ -109,6 +108,61 @@ export default function UsuariosPage() {
             });
 
             if (response.ok) {
+                if (editForm.is_active !== editingUsuario.is_active) {
+                    try {
+                        if (!editForm.is_active) {
+                            let deactivateRes = await fetch(`${API_URL}/api/v1/users/${editingUsuario.id}/deactivate/`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ confirm: false }),
+                            });
+
+                            if (deactivateRes.status === 409) {
+                                const errorData = await deactivateRes.json();
+                                const msg = errorData.message || "El usuario tiene tickets o inventarios pendientes. ¿Deseas desactivarlo de todos modos?";
+                                if (confirm(msg)) {
+                                    deactivateRes = await fetch(`${API_URL}/api/v1/users/${editingUsuario.id}/deactivate/`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Authorization': `Bearer ${token}`
+                                        },
+                                        body: JSON.stringify({ confirm: true }),
+                                    });
+                                } else {
+                                    alert("El usuario fue modificado pero la desactivación fue cancelada.");
+                                    setEditingUsuario(null);
+                                    fetchUsuarios();
+                                    return;
+                                }
+                            }
+
+                            if (!deactivateRes.ok) {
+                                const errData = await deactivateRes.json();
+                                alert(`Error al desactivar el usuario: ${errData.detail || errData.message || 'Error desconocido'}`);
+                            }
+                        } else {
+                            const reactivateRes = await fetch(`${API_URL}/api/v1/users/${editingUsuario.id}/reactivate/`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({}),
+                            });
+                            if (!reactivateRes.ok) {
+                                const errData = await reactivateRes.json();
+                                alert(`Error al activar el usuario: ${errData.detail || errData.message || 'Error desconocido'}`);
+                            }
+                        }
+                    } catch (statusError) {
+                        console.error("Error al actualizar el estado de actividad del usuario:", statusError);
+                        alert("El usuario se actualizó, pero hubo un error al cambiar su estado de activación/desactivación.");
+                    }
+                }
                 setEditingUsuario(null);
                 fetchUsuarios();
             } else {
