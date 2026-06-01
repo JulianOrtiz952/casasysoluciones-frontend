@@ -19,6 +19,7 @@ interface Ticket {
     created_at: string;
     updated_at: string;
     rejection_reason?: string;
+    assigned_contractor_name?: string;
     attachments: Array<{
         id: number;
         image_url: string;
@@ -37,6 +38,11 @@ export default function TicketDetailPage() {
     const [actionLoading, setActionLoading] = useState(false);
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
+    // Roles and Admin update fields
+    const [userRole, setUserRole] = useState<string>('');
+    const [adminStatus, setAdminStatus] = useState<string>('OPEN');
+    const [adminContractor, setAdminContractor] = useState<string>('');
+
     const fetchTicketDetails = async () => {
         try {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -47,6 +53,8 @@ export default function TicketDetailPage() {
             if (res.ok) {
                 const data = await res.json();
                 setTicket(data);
+                setAdminStatus(data.status);
+                setAdminContractor(data.assigned_contractor_name || '');
             } else {
                 setError('No se pudo encontrar el ticket especificado.');
             }
@@ -59,6 +67,25 @@ export default function TicketDetailPage() {
     };
 
     useEffect(() => {
+        // Decode token to get user role
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                const decoded = JSON.parse(jsonPayload);
+                const role = decoded.role || decoded.rol;
+                if (role) {
+                    setUserRole(role);
+                }
+            } catch (e) {
+                console.error('Error decoding token:', e);
+            }
+        }
+
         if (params.id) {
             fetchTicketDetails();
         }
@@ -76,6 +103,8 @@ export default function TicketDetailPage() {
             if (res.ok) {
                 const updated = await res.json();
                 setTicket(updated);
+                setAdminStatus(updated.status);
+                setAdminContractor(updated.assigned_contractor_name || '');
                 alert('Reparación confirmada con éxito. El ticket ha sido cerrado.');
             } else {
                 alert('Ocurrió un error al confirmar la reparación.');
@@ -110,6 +139,8 @@ export default function TicketDetailPage() {
             if (res.ok) {
                 const updated = await res.json();
                 setTicket(updated);
+                setAdminStatus(updated.status);
+                setAdminContractor(updated.assigned_contractor_name || '');
                 setReportingProblem(false);
                 setRejectionReason('');
                 alert('Reporte de inconveniente enviado. El ticket ha sido actualizado.');
@@ -118,6 +149,41 @@ export default function TicketDetailPage() {
             }
         } catch (err) {
             console.error('Error reporting problem:', err);
+            alert('Error de conexión.');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleAdminUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setActionLoading(true);
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/v1/tickets/${params.id}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    status: adminStatus,
+                    assigned_contractor_name: adminContractor
+                })
+            });
+            if (res.ok) {
+                const updated = await res.json();
+                setTicket(updated);
+                setAdminStatus(updated.status);
+                setAdminContractor(updated.assigned_contractor_name || '');
+                alert('El ticket ha sido actualizado exitosamente.');
+            } else {
+                const errData = await res.json();
+                alert(errData.error || 'Ocurrió un error al actualizar el ticket.');
+            }
+        } catch (err) {
+            console.error('Error updating ticket:', err);
             alert('Error de conexión.');
         } finally {
             setActionLoading(false);
@@ -230,8 +296,10 @@ export default function TicketDetailPage() {
 
     const messages = getMessages();
 
+    const isStaff = userRole === 'ADMIN' || userRole === 'ASSISTANT';
+
     // Check if confirming action is available for tenant
-    const showActionRequired = ticket.status === 'IN_PROGRESS' || ticket.status === 'ACCEPTED';
+    const showActionRequired = (ticket.status === 'IN_PROGRESS' || ticket.status === 'ACCEPTED') && userRole === 'TENANT';
 
     const getFullImageUrl = (path: string) => {
         if (!path) return '';
@@ -418,6 +486,14 @@ export default function TicketDetailPage() {
                                     {new Date(ticket.created_at).toLocaleDateString('es-ES')}
                                 </span>
                             </div>
+                            {ticket.assigned_contractor_name && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-400 uppercase tracking-wider text-[10px]">Contratista</span>
+                                    <span className="text-slate-700 dark:text-slate-200 font-bold">
+                                        {ticket.assigned_contractor_name}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -498,6 +574,63 @@ export default function TicketDetailPage() {
                                     </div>
                                 </form>
                             )}
+                        </div>
+                    )}
+
+                    {isStaff && (
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+                            <div className="flex items-center gap-3 text-slate-800 dark:text-white">
+                                <div className="w-9 h-9 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0">
+                                    <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                </div>
+                                <h3 className="text-xs font-black uppercase tracking-widest">
+                                    Gestión del Ticket
+                                </h3>
+                            </div>
+                            
+                            <form onSubmit={handleAdminUpdate} className="space-y-4 pt-2">
+                                <div>
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-1">
+                                        Estado del Ticket *
+                                    </label>
+                                    <select
+                                        value={adminStatus}
+                                        onChange={(e) => setAdminStatus(e.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-semibold outline-none focus:border-rose-500 transition-all text-slate-800 dark:text-white"
+                                    >
+                                        <option value="DRAFT">Borrador</option>
+                                        <option value="OPEN">Abierto</option>
+                                        <option value="ACCEPTED">Aceptado</option>
+                                        <option value="IN_PROGRESS">En proceso</option>
+                                        <option value="REJECTED">Rechazado</option>
+                                        <option value="CLOSED">Cerrado</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-1">
+                                        Contratista Asignado
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={adminContractor}
+                                        onChange={(e) => setAdminContractor(e.target.value)}
+                                        placeholder="Ej. Juan Pérez (Plomero)"
+                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-semibold outline-none focus:border-rose-500 transition-all text-slate-800 dark:text-white"
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-rose-600/10 flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    {actionLoading ? 'Guardando...' : 'Guardar Cambios'}
+                                </button>
+                            </form>
                         </div>
                     )}
 
