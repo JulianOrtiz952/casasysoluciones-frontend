@@ -26,6 +26,30 @@ export default function NuevoUsuario() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        // Validaciones
+        const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]*$/;
+        if (!nameRegex.test(formData.nombre.trim())) {
+            alert("El nombre no debe contener caracteres especiales, solo letras, espacios y tildes.");
+            return;
+        }
+        if (!nameRegex.test(formData.apellido.trim())) {
+            alert("El apellido no debe contener caracteres especiales, solo letras, espacios y tildes.");
+            return;
+        }
+        if (formData.email.trim() && !formData.email.includes('@')) {
+            alert("El correo electrónico debe contener '@'.");
+            return;
+        }
+        if (formData.telefono.trim() && !/^\d{10}$/.test(formData.telefono.trim())) {
+            alert("El teléfono celular debe tener exactamente 10 dígitos numéricos.");
+            return;
+        }
+        if (formData.documentoNumero.trim() && !/^\d{8,11}$/.test(formData.documentoNumero.trim())) {
+            alert("El número de identificación debe tener entre 8 y 11 dígitos.");
+            return;
+        }
+
         setLoading(true);
 
         try {

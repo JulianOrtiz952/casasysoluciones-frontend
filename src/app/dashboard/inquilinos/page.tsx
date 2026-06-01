@@ -103,6 +103,26 @@ export default function InquilinosPage() {
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingUsuario) return;
+
+        // Validaciones
+        const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]*$/;
+        if (!nameRegex.test(editForm.first_name.trim())) {
+            alert("El nombre no debe contener caracteres especiales, solo letras, espacios y tildes.");
+            return;
+        }
+        if (!nameRegex.test(editForm.last_name.trim())) {
+            alert("El apellido no debe contener caracteres especiales, solo letras, espacios y tildes.");
+            return;
+        }
+        if (editForm.phone && !/^\d{10}$/.test(editForm.phone.trim())) {
+            alert("El teléfono celular debe tener exactamente 10 dígitos numéricos.");
+            return;
+        }
+        if (editForm.document_number && !/^\d{8,11}$/.test(editForm.document_number.trim())) {
+            alert("El número de identificación debe tener entre 8 y 11 dígitos.");
+            return;
+        }
+
         setSubmitting(true);
 
         try {

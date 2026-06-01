@@ -22,6 +22,26 @@ export default function NuevoInquilino() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        // Validaciones
+        const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]*$/;
+        if (!nameRegex.test(formData.nombre.trim())) {
+            alert("El nombre completo no debe contener caracteres especiales, solo letras, espacios y tildes.");
+            return;
+        }
+        if (formData.email.trim() && !formData.email.includes('@')) {
+            alert("El correo electrónico debe contener '@'.");
+            return;
+        }
+        if (formData.telefono.trim() && !/^\d{10}$/.test(formData.telefono.trim())) {
+            alert("El teléfono celular debe tener exactamente 10 dígitos numéricos.");
+            return;
+        }
+        if (formData.identificacion.trim() && !/^\d{8,11}$/.test(formData.identificacion.trim())) {
+            alert("El número de identificación debe tener entre 8 y 11 dígitos.");
+            return;
+        }
+
         setLoading(true);
 
         try {
