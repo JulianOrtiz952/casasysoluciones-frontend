@@ -177,6 +177,7 @@ export default function NuevoUsuario() {
                             <select name="rol" value={formData.rol} onChange={handleInputChange} required className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm">
                                 <option value="ASSISTANT">Asistente Administrativo</option>
                                 <option value="ADMIN">Administrador</option>
+                                <option value="TECHNICIAN">Técnico</option>
                             </select>
                         </div>
                         <div className="space-y-2 group">

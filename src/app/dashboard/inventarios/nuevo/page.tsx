@@ -323,7 +323,7 @@ export default function NuevoInventarioPage() {
                                         className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-rose-500/20 transition-all dark:text-white"
                                     >
                                         <option value="">Seleccionar propiedad...</option>
-                                        {properties.map(p => <option key={p.id} value={p.id}>{p.code} - {p.address}</option>)}
+                                        {properties.map(p => <option key={p.id} value={p.id}>{p.owner_name || p.address} ({p.code})</option>)}
                                     </select>
                                 </div>
                                 <div className="space-y-2">

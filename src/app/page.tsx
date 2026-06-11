@@ -23,19 +23,27 @@ interface Inmueble {
   in_complex: boolean;
   admin_included: boolean;
   admin_value: string | null;
+  owner_name: string;
 }
 
 function InmuebleCard({ inmueble }: { inmueble: Inmueble }) {
   const [currentIdx, setCurrentIdx] = useState(0);
 
+  const getImageUrl = (url: string | null | undefined) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    return `${API_URL}${url}`;
+  };
+
   const images = (() => {
     const galleryImages = inmueble.images || [];
     if (galleryImages.length === 0) {
-      return inmueble.cover_image ? [inmueble.cover_image] : [];
+      return inmueble.cover_image ? [getImageUrl(inmueble.cover_image)] : [];
     }
     // Ensure cover is first
     const sorted = [...galleryImages].sort((a, b) => (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0));
-    return sorted.map(i => i.image);
+    return sorted.map(i => getImageUrl(i.image));
   })();
 
   const nextImg = (e: React.MouseEvent) => {
@@ -85,8 +93,9 @@ function InmuebleCard({ inmueble }: { inmueble: Inmueble }) {
       </div>
 
       <div className="p-6 flex flex-col flex-grow">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white line-clamp-1 group-hover/card:text-rose-600 transition-colors uppercase tracking-tight">{inmueble.code}</h3>
-        <div className="flex gap-2 mt-2 items-start">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white line-clamp-1 group-hover/card:text-rose-600 transition-colors uppercase tracking-tight">{inmueble.owner_name}</h3>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{inmueble.code}</p>
+        <div className="flex gap-2 mt-2.5 items-start">
           <svg className="w-4 h-4 mt-0.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1 w-full font-medium" title={inmueble.address}>
             {inmueble.address}

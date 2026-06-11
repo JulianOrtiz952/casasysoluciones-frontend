@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAlert } from '@/app/alert-provider';
+
 
 interface Usuario {
     id: number;
     email: string;
     first_name: string;
     last_name: string;
-    role: 'ADMIN' | 'ASSISTANT' | 'TENANT';
+    role: 'ADMIN' | 'ASSISTANT' | 'TENANT' | 'TECHNICIAN';
     role_display: string;
     is_active: boolean;
     document_type?: string;
@@ -17,9 +19,11 @@ interface Usuario {
 }
 
 export default function UsuariosPage() {
+    const { showConfirm } = useAlert();
     const [usuarios, setUsuarios] = useState<Usuario[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<'all' | 'ADMIN' | 'ASSISTANT'>('all');
+    const [filter, setFilter] = useState<'all' | 'ADMIN' | 'ASSISTANT' | 'TECHNICIAN'>('all');
+
 
     const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
     const [editForm, setEditForm] = useState({
@@ -28,7 +32,7 @@ export default function UsuariosPage() {
         phone: '',
         document_type: '',
         document_number: '',
-        role: 'ASSISTANT' as 'ADMIN' | 'ASSISTANT' | 'TENANT',
+        role: 'ASSISTANT' as 'ADMIN' | 'ASSISTANT' | 'TENANT' | 'TECHNICIAN',
         is_active: true,
         password: ''
     });
@@ -143,7 +147,8 @@ export default function UsuariosPage() {
                             if (deactivateRes.status === 409) {
                                 const errorData = await deactivateRes.json();
                                 const msg = errorData.message || "El usuario tiene tickets o inventarios pendientes. ¿Deseas desactivarlo de todos modos?";
-                                if (confirm(msg)) {
+                                const confirmed = await showConfirm(msg, "Desactivar Usuario");
+                                if (confirmed) {
                                     deactivateRes = await fetch(`${API_URL}/api/v1/users/${editingUsuario.id}/deactivate/`, {
                                         method: 'POST',
                                         headers: {
@@ -252,6 +257,7 @@ export default function UsuariosPage() {
         total: staff.length,
         admins: staff.filter(u => u.role === 'ADMIN').length,
         asistentes: staff.filter(u => u.role === 'ASSISTANT').length,
+        tecnicos: staff.filter(u => u.role === 'TECHNICIAN').length,
     };
 
     return (
@@ -271,11 +277,12 @@ export default function UsuariosPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
                     { label: 'Total Staff', value: stats.total, color: 'bg-indigo-50 text-indigo-600', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
                     { label: 'Administradores', value: stats.admins, color: 'bg-purple-50 text-purple-600', icon: 'M9 12l2 2 4-4m5.618-4.016A3.323 3.323 0 0010.603 2L12 10l-2.293 2.293a1 1 0 000 1.414L12 16l1.397-8.382a3.323 3.323 0 004.618 4.016z' },
                     { label: 'Asistentes', value: stats.asistentes, color: 'bg-amber-50 text-amber-600', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+                    { label: 'Técnicos', value: stats.tecnicos, color: 'bg-teal-50 text-teal-600', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
                 ].map((s, i) => (
                     <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-5">
                         <div className={`w-14 h-14 ${s.color} rounded-2xl flex items-center justify-center shrink-0`}>
@@ -295,6 +302,7 @@ export default function UsuariosPage() {
                     { id: 'all', label: 'Todos' },
                     { id: 'ADMIN', label: 'Admins' },
                     { id: 'ASSISTANT', label: 'Asistentes' },
+                    { id: 'TECHNICIAN', label: 'Técnicos' },
                 ].map(t => (
                     <button
                         key={t.id}
@@ -338,7 +346,8 @@ export default function UsuariosPage() {
                                     <td className="px-8 py-5 text-sm font-medium text-slate-500">{u.email}</td>
                                     <td className="px-8 py-5">
                                         <span className={`px-2.5 py-1 rounded text-[9px] font-black uppercase tracking-tight ${
-                                            u.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'
+                                            u.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
+                                            u.role === 'ASSISTANT' ? 'bg-orange-100 text-orange-700' : 'bg-teal-100 text-teal-700'
                                         }`}>
                                             {u.role_display}
                                         </span>
@@ -452,6 +461,7 @@ export default function UsuariosPage() {
                                     >
                                         <option value="ASSISTANT">Asistente Administrativo</option>
                                         <option value="ADMIN">Administrador</option>
+                                        <option value="TECHNICIAN">Técnico</option>
                                     </select>
                                 </div>
                             </div>

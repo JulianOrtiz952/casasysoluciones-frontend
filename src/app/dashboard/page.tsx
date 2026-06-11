@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface Stats {
     overview: {
@@ -23,17 +24,46 @@ interface Stats {
     }>;
 }
 
+function parseJwt(token: string) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        return null;
+    }
+}
+
 export default function DashboardSummary() {
     const [stats, setStats] = useState<Stats | null>(null);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
                 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
                 const token = localStorage.getItem('token');
+                if (token) {
+                    const decoded = parseJwt(token);
+                    if (decoded) {
+                        const role = decoded.role || decoded.rol;
+                        if (role === 'TENANT') {
+                            router.push('/dashboard/inmuebles');
+                            return;
+                        }
+                        if (role === 'TECHNICIAN') {
+                            router.push('/dashboard/tickets');
+                            return;
+                        }
+                    }
+                }
+                const tokenCheck = localStorage.getItem('token');
                 const res = await fetch(`${API_URL}/api/v1/admin/dashboard-stats/`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': `Bearer ${tokenCheck}` }
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -46,7 +76,7 @@ export default function DashboardSummary() {
             }
         };
         fetchStats();
-    }, []);
+    }, [router]);
 
     if (loading) {
         return <div className="flex items-center justify-center h-64 animate-pulse text-slate-400 font-medium">Cargando resumen...</div>;

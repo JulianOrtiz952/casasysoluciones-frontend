@@ -212,7 +212,7 @@ export default function NuevoTicketPage() {
                         >
                             {properties.map(p => (
                                 <option key={p.id} value={p.id}>
-                                    {p.address} ({p.city})
+                                    {p.owner_name || p.address} ({p.code})
                                 </option>
                             ))}
                         </select>

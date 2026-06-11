@@ -2,25 +2,37 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAlert } from '@/app/alert-provider';
+
 
 interface Usuario {
     id: number;
     email: string;
     first_name: string;
     last_name: string;
-    role: 'ADMIN' | 'ASSISTANT' | 'TENANT';
+    role: 'ADMIN' | 'ASSISTANT' | 'TENANT' | 'TECHNICIAN';
     role_display: string;
     is_active: boolean;
     document_type: string;
     document_number: string;
     phone: string;
     public_code: string;
+    active_properties?: Array<{
+        id: number;
+        code: string;
+        address: string;
+        city: string;
+        type: string;
+        status: string;
+    }>;
 }
 
 export default function InquilinosPage() {
+    const { showConfirm } = useAlert();
     const [usuarios, setUsuarios] = useState<Usuario[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<'all' | 'ADMIN' | 'ASSISTANT' | 'TENANT'>('all');
+    const [filter, setFilter] = useState<'all' | 'ADMIN' | 'ASSISTANT' | 'TENANT' | 'TECHNICIAN'>('all');
+
 
     const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
     const [editForm, setEditForm] = useState({
@@ -29,7 +41,7 @@ export default function InquilinosPage() {
         phone: '',
         document_type: '',
         document_number: '',
-        role: 'TENANT' as 'ADMIN' | 'ASSISTANT' | 'TENANT',
+        role: 'TENANT' as 'ADMIN' | 'ASSISTANT' | 'TENANT' | 'TECHNICIAN',
         is_active: true,
         password: ''
     });
@@ -167,7 +179,8 @@ export default function InquilinosPage() {
                             if (deactivateRes.status === 409) {
                                 const errorData = await deactivateRes.json();
                                 const msg = errorData.message || "El usuario tiene tickets o inventarios pendientes. ¿Deseas desactivarlo de todos modos?";
-                                if (confirm(msg)) {
+                                const confirmed = await showConfirm(msg, "Desactivar Arrendatario");
+                                if (confirmed) {
                                     deactivateRes = await fetch(`${API_URL}/api/v1/users/${editingUsuario.id}/deactivate/`, {
                                         method: 'POST',
                                         headers: {
@@ -252,6 +265,7 @@ export default function InquilinosPage() {
         total: usuarios.length,
         admins: usuarios.filter(u => u.role === 'ADMIN').length,
         asistentes: usuarios.filter(u => u.role === 'ASSISTANT').length,
+        tecnicos: usuarios.filter(u => u.role === 'TECHNICIAN').length,
         arrendatarios: usuarios.filter(u => u.role === 'TENANT').length,
     };
 
@@ -260,7 +274,7 @@ export default function InquilinosPage() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Usuarios</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Gestiona los administradores, asistentes y arrendatarios del sistema.</p>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Gestiona los administradores, asistentes, técnicos y arrendatarios del sistema.</p>
                 </div>
                 <div className="flex gap-2">
                     <button className="px-5 py-2.5 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-black text-slate-500 uppercase tracking-widest hover:bg-slate-50 transition-colors flex items-center gap-2">
@@ -278,11 +292,12 @@ export default function InquilinosPage() {
             </div>
 
             {/* Stat Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 {[
                     { label: 'Total Usuarios', value: stats.total, color: 'bg-blue-50 text-blue-600', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
                     { label: 'Administradores', value: stats.admins, color: 'bg-purple-50 text-purple-600', icon: 'M12 11c0 3.517-1.009 6.799-2.753 9.571m-1.17-10.963a11.323 11.323 0 01-1.378-5.753m11.074 12.355A11.303 11.303 0 019 21a11.303 11.303 0 01-11.23-9.512C.33 6.945 3.866 3 8 3c4.135 0 7.67 3.945 7.231 8.488a11.326 11.326 0 01-1.378 5.753l1.17 1.407a11.316 11.316 0 011.054-2.693l1.17 1.406z' },
                     { label: 'Asistentes', value: stats.asistentes, color: 'bg-orange-50 text-orange-600', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+                    { label: 'Técnicos', value: stats.tecnicos, color: 'bg-teal-50 text-teal-600', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
                     { label: 'Arrendatarios', value: stats.arrendatarios, color: 'bg-emerald-50 text-emerald-600', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
                 ].map((s, i) => (
                     <div key={i} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
@@ -304,6 +319,7 @@ export default function InquilinosPage() {
                         { id: 'all', label: 'Todos' },
                         { id: 'ADMIN', label: 'Administradores' },
                         { id: 'ASSISTANT', label: 'Asistentes' },
+                        { id: 'TECHNICIAN', label: 'Técnicos' },
                         { id: 'TENANT', label: 'Arrendatarios' },
                     ].map(t => (
                         <button
@@ -353,7 +369,14 @@ export default function InquilinosPage() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-bold text-slate-900 dark:text-white capitalize">{u.first_name} {u.last_name}</p>
-                                                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-tight">ID: USR-{u.id.toString().padStart(4, '0')}</p>
+                                                <div className="flex flex-col gap-0.5 mt-0.5">
+                                                    <p className="text-[10px] font-medium text-slate-400 uppercase tracking-tight">ID: USR-{u.id.toString().padStart(4, '0')}</p>
+                                                    {u.role === 'TENANT' && u.active_properties && u.active_properties.length > 0 && (
+                                                        <p className="text-[10px] text-rose-600 dark:text-rose-400 font-bold uppercase tracking-tight">
+                                                            Propiedad: {u.active_properties[0].code} - {u.active_properties[0].address}
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -364,7 +387,8 @@ export default function InquilinosPage() {
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tight ${
                                             u.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
-                                            u.role === 'ASSISTANT' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                                            u.role === 'ASSISTANT' ? 'bg-orange-100 text-orange-700' :
+                                            u.role === 'TECHNICIAN' ? 'bg-teal-100 text-teal-700' : 'bg-blue-100 text-blue-700'
                                         }`}>
                                             {u.role_display}
                                         </span>
@@ -490,6 +514,7 @@ export default function InquilinosPage() {
                                     >
                                         <option value="TENANT">Arrendatario</option>
                                         <option value="ASSISTANT">Asistente Administrativo</option>
+                                        <option value="TECHNICIAN">Técnico</option>
                                         <option value="ADMIN">Administrador</option>
                                     </select>
                                 </div>
@@ -519,6 +544,28 @@ export default function InquilinosPage() {
                                     />
                                 </div>
                             </div>
+
+                            {editForm.role === 'TENANT' && (
+                                <div className="p-5 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 rounded-2xl space-y-2">
+                                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-widest leading-none">Propiedad Asociada</h4>
+                                    {editingUsuario.active_properties && editingUsuario.active_properties.length > 0 ? (
+                                        <div className="flex justify-between items-center pt-1">
+                                            <div>
+                                                <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                                                    {editingUsuario.active_properties[0].code}
+                                                </p>
+                                                <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 leading-normal">
+                                                    {editingUsuario.active_properties[0].address}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 pt-1">
+                                            Sin propiedad asociada actualmente.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
 
                             {isCurrentUser(editingUsuario.email) && (
                                 <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">

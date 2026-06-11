@@ -8,6 +8,7 @@ interface Inquilino {
     id: number;
     nombre: string;
     identificacion: string;
+    email: string;
 }
 
 interface Imagen {
@@ -34,6 +35,14 @@ interface Inmueble {
     cocinas?: number | null;
     garajes?: number | null;
     es_comercial?: boolean;
+    active_tenant?: {
+        id: number;
+        public_code: string;
+        email: string;
+        first_name: string;
+        last_name: string;
+        document_number: string;
+    } | null;
 }
 
 interface Historial {
@@ -59,6 +68,7 @@ export default function DashboardInmuebleDetail() {
     const [inmueble, setInmueble] = useState<Inmueble | null>(null);
     const [historial, setHistorial] = useState<Historial[]>([]);
     const [inquilinos, setInquilinos] = useState<Inquilino[]>([]);
+    const [legacyInquilinos, setLegacyInquilinos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -101,7 +111,8 @@ export default function DashboardInmuebleDetail() {
                         salas: data.living_rooms,
                         cocinas: data.kitchens,
                         garajes: data.garages,
-                        es_comercial: data.is_commercial
+                        es_comercial: data.is_commercial,
+                        active_tenant: data.active_tenant
                     };
                     setInmueble(mappedInmueble);
                 } else { 
@@ -119,13 +130,29 @@ export default function DashboardInmuebleDetail() {
                     setHistorial(allHist.filter(h => h.inmueble === Number(id)));
                 }
 
-                // Fetch Inquilinos para el select
-                const resInq = await fetch(`${API_URL}/api/v1/inquilinos/`, {
+                // Trigger sync and fetch legacy inquilinos in background
+                const resLegacy = await fetch(`${API_URL}/api/v1/inquilinos/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (resLegacy.ok) {
+                    const data = await resLegacy.json();
+                    setLegacyInquilinos(Array.isArray(data) ? data : (data.results || []));
+                }
+
+                // Fetch tenants (active=1) to display only active TENANT users
+                const resInq = await fetch(`${API_URL}/api/v1/tenants/?active=1`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (resInq.ok) {
                     const data = await resInq.json();
-                    setInquilinos(Array.isArray(data) ? data : (data.results || []));
+                    const list = Array.isArray(data) ? data : (data.results || []);
+                    const mappedInq = list.map((t: any) => ({
+                        id: t.id,
+                        nombre: `${t.first_name || ''} ${t.last_name || ''}`.trim() || t.email,
+                        identificacion: t.document_number || t.public_code || '',
+                        email: t.email
+                    }));
+                    setInquilinos(mappedInq);
                 }
 
             } catch (error) {
@@ -144,10 +171,42 @@ export default function DashboardInmuebleDetail() {
 
         try {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
             const token = localStorage.getItem('token');
 
-            // 1. Crear el historial
+            const selectedTenant = inquilinos.find(inq => inq.id === Number(inquilinoSeleccionado));
+            if (!selectedTenant) {
+                alert("Inquilino seleccionado inválido.");
+                setSaving(false);
+                return;
+            }
+
+            const legacyInq = legacyInquilinos.find(li => li.email.toLowerCase() === selectedTenant.email.toLowerCase());
+            if (!legacyInq) {
+                alert("Error: No se encontró el inquilino en la base de datos de historial.");
+                setSaving(false);
+                return;
+            }
+
+            // 1. Crear asociación en sistema moderno (UserPropertyAssociation)
+            const resAssoc = await fetch(`${API_URL}/api/v1/tenants/${selectedTenant.id}/properties/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    property_id: inmueble.id
+                })
+            });
+
+            if (!resAssoc.ok) {
+                const errorData = await resAssoc.json();
+                alert(`Error al asociar propiedad: ${errorData.message || errorData.detail || 'Error en backend'}`);
+                setSaving(false);
+                return;
+            }
+
+            // 2. Crear el historial de alquiler (legacy)
             const resHistorial = await fetch(`${API_URL}/api/v1/historial_alquiler/`, {
                 method: 'POST',
                 headers: { 
@@ -156,32 +215,79 @@ export default function DashboardInmuebleDetail() {
                 },
                 body: JSON.stringify({
                     inmueble: inmueble.id,
-                    inquilino: inquilinoSeleccionado,
+                    inquilino: legacyInq.id,
                     fecha_inicio: fechaInicio,
                     esta_activo: true
                 })
             });
 
             if (resHistorial.ok) {
-                // 2. Cambiar el estado de la casa automáticamente a "Arrendada" si no lo estaba
-                if (inmueble.estado !== 'arrendada') {
-                    await fetch(`${API_URL}/api/v1/properties/${id}/`, {
-                        method: 'PATCH',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({ status: 'RENTED' })
-                    });
-                }
                 // Refrescar página para ver cambios
                 window.location.reload();
             } else {
-                alert("Error al asignar inquilino.");
+                alert("Error al guardar el historial de asignación.");
             }
         } catch (error) {
             console.error(error);
             alert("Error de conexión");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleFinalizarContrato = async (hist: Historial) => {
+        if (!confirm(`¿Está seguro de que desea finalizar el contrato para ${hist.inquilino_detalle.nombre}?`)) {
+            return;
+        }
+        setSaving(true);
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const token = localStorage.getItem('token');
+
+            // Buscar tenant_id correspondiente en el sistema moderno
+            const resAllTenants = await fetch(`${API_URL}/api/v1/tenants/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (resAllTenants.ok) {
+                const data = await resAllTenants.json();
+                const list = Array.isArray(data) ? data : (data.results || []);
+                const tenantUser = list.find((t: any) => t.email.toLowerCase() === hist.inquilino_detalle.email.toLowerCase());
+                if (tenantUser) {
+                    // Desasociar en el sistema moderno
+                    await fetch(`${API_URL}/api/v1/tenants/${tenantUser.id}/properties/${id}/`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
+            }
+
+            // Actualizar en el sistema legacy (HistorialAlquiler)
+            await fetch(`${API_URL}/api/v1/historial_alquiler/${hist.id}/`, {
+                method: 'PATCH',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    esta_activo: false,
+                    fecha_fin: new Date().toISOString().split('T')[0]
+                })
+            });
+
+            // Cambiar el estado del inmueble a AVAILABLE
+            await fetch(`${API_URL}/api/v1/properties/${id}/`, {
+                method: 'PATCH',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: 'AVAILABLE' })
+            });
+
+            window.location.reload();
+        } catch (error) {
+            console.error(error);
+            alert("Error al finalizar el contrato.");
         } finally {
             setSaving(false);
         }
@@ -313,45 +419,125 @@ export default function DashboardInmuebleDetail() {
                 {/* Columna Derecha: Asignaciones e Historial */}
                 <div className="lg:col-span-2 space-y-6">
 
-                    {/* Tarjeta de Asignación */}
+                    {/* Tarjeta de Asignación / Advertencia de Ocupado */}
                     <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800">
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Asignar Nuevo Inquilino</h2>
-                        <form onSubmit={handleAsignar} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                            <div className="md:col-span-2 space-y-2 group">
-                                <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Seleccionar Inquilino</label>
-                                <select
-                                    required
-                                    value={inquilinoSeleccionado}
-                                    onChange={(e) => setInquilinoSeleccionado(e.target.value)}
-                                    className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all appearance-none cursor-pointer shadow-sm"
-                                >
-                                    <option value="">-- Elige --</option>
-                                    {inquilinos.map(inq => (
-                                        <option key={inq.id} value={inq.id}>{inq.nombre} ({inq.identificacion})</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="md:col-span-2 space-y-2 group">
-                                <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Fecha de Inicio</label>
-                                <input
-                                    required
-                                    type="date"
-                                    value={fechaInicio}
-                                    onChange={(e) => setFechaInicio(e.target.value)}
-                                    className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm"
-                                />
-                            </div>
-                            <div className="md:col-span-1">
-                                <button disabled={saving} type="submit" className="w-full h-[52px] bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white font-bold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] active:scale-95 text-sm">
-                                    {saving ? 'Guardando' : 'Asignar'}
-                                </button>
-                            </div>
-                            {inquilinos.length === 0 && (
-                                <p className="md:col-span-5 text-sm text-rose-500 mt-2">
-                                    No tienes inquilinos creados. Ve a la <Link href="/dashboard/inquilinos/nuevo" className="underline">página de Inquilinos</Link> para registrar uno primero.
+                        {inmueble.estado === 'arrendada' || inmueble.active_tenant ? (
+                            <div className="bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/20 p-6 rounded-2xl">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <svg className="w-5 h-5 text-amber-600 dark:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                    <h3 className="text-sm font-black text-amber-800 dark:text-amber-400 uppercase tracking-wider">Propiedad Ocupada</h3>
+                                </div>
+                                <p className="text-xs text-amber-700 dark:text-amber-300 font-semibold leading-relaxed mb-4">
+                                    Este inmueble actualmente tiene un inquilino activo: <span className="font-bold">{inmueble.active_tenant ? `${inmueble.active_tenant.first_name || ''} ${inmueble.active_tenant.last_name || ''} (${inmueble.active_tenant.email})`.trim() : 'Cargando...'}</span>. Para poder asignar un nuevo arrendatario, primero debe dar por terminado el contrato actual.
                                 </p>
-                            )}
-                        </form>
+                                {inmueble.active_tenant && (
+                                    <button
+                                        disabled={saving}
+                                        onClick={async () => {
+                                            const tenant = inmueble.active_tenant;
+                                            if (!tenant) return;
+                                            if (!confirm(`¿Está seguro de que desea finalizar el contrato para ${tenant.first_name || ''} ${tenant.last_name || ''}?`)) {
+                                                return;
+                                            }
+                                            setSaving(true);
+                                            try {
+                                                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                                                const token = localStorage.getItem('token');
+ 
+                                                // 1. Dissociate in the modern system
+                                                await fetch(`${API_URL}/api/v1/tenants/${tenant.id || 0}/properties/${id}/`, {
+                                                    method: 'DELETE',
+                                                    headers: { 'Authorization': `Bearer ${token}` }
+                                                });
+
+                                                // 2. Dissociate in legacy system (HistorialAlquiler) if any active records exist
+                                                const resHist = await fetch(`${API_URL}/api/v1/historial_alquiler/`, {
+                                                    headers: { 'Authorization': `Bearer ${token}` }
+                                                });
+                                                if (resHist.ok) {
+                                                    const dataHist = await resHist.json();
+                                                    const allHist = Array.isArray(dataHist) ? dataHist : (dataHist.results || []);
+                                                    const activeHist = allHist.find((h: any) => h.inmueble === Number(id) && h.esta_activo);
+                                                    if (activeHist) {
+                                                        await fetch(`${API_URL}/api/v1/historial_alquiler/${activeHist.id}/`, {
+                                                            method: 'PATCH',
+                                                            headers: { 
+                                                                'Content-Type': 'application/json',
+                                                                'Authorization': `Bearer ${token}`
+                                                            },
+                                                            body: JSON.stringify({
+                                                                esta_activo: false,
+                                                                fecha_fin: new Date().toISOString().split('T')[0]
+                                                            })
+                                                        });
+                                                    }
+                                                }
+
+                                                // 3. Set property status to AVAILABLE
+                                                await fetch(`${API_URL}/api/v1/properties/${id}/`, {
+                                                    method: 'PATCH',
+                                                    headers: { 
+                                                        'Content-Type': 'application/json',
+                                                        'Authorization': `Bearer ${token}`
+                                                    },
+                                                    body: JSON.stringify({ status: 'AVAILABLE' })
+                                                });
+
+                                                window.location.reload();
+                                            } catch (error) {
+                                                console.error(error);
+                                                alert("Error al finalizar el contrato.");
+                                            } finally {
+                                                setSaving(false);
+                                            }
+                                        }}
+                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-500 disabled:bg-rose-400 text-white font-bold rounded-xl transition text-[10px] uppercase tracking-wider shadow-sm"
+                                    >
+                                        Finalizar Contrato Actual
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Asignar Nuevo Inquilino</h2>
+                                <form onSubmit={handleAsignar} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                                    <div className="md:col-span-2 space-y-2 group">
+                                        <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Seleccionar Inquilino</label>
+                                        <select
+                                            required
+                                            value={inquilinoSeleccionado}
+                                            onChange={(e) => setInquilinoSeleccionado(e.target.value)}
+                                            className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all appearance-none cursor-pointer shadow-sm"
+                                        >
+                                            <option value="">-- Elige --</option>
+                                            {inquilinos.map(inq => (
+                                                <option key={inq.id} value={inq.id}>{inq.nombre} ({inq.identificacion})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="md:col-span-2 space-y-2 group">
+                                        <label className="text-[11px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase">Fecha de Inicio</label>
+                                        <input
+                                            required
+                                            type="date"
+                                            value={fechaInicio}
+                                            onChange={(e) => setFechaInicio(e.target.value)}
+                                            className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-1">
+                                        <button disabled={saving} type="submit" className="w-full h-[52px] bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white font-bold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] active:scale-95 text-sm">
+                                            {saving ? 'Guardando' : 'Asignar'}
+                                        </button>
+                                    </div>
+                                    {inquilinos.length === 0 && (
+                                        <p className="md:col-span-5 text-sm text-rose-500 mt-2">
+                                            No tienes inquilinos creados. Ve a la <Link href="/dashboard/inquilinos/nuevo" className="underline">página de Inquilinos</Link> para registrar uno primero.
+                                        </p>
+                                    )}
+                                </form>
+                            </>
+                        )}
                     </div>
 
                     {/* Historial */}
@@ -376,11 +562,20 @@ export default function DashboardInmuebleDetail() {
                                                 <span className="text-sm text-slate-500 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-md">{hist.fecha_inicio}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Fin:</span>
+                                                <span className="text-sm font-semibold text-slate-600 dark:text-slate-300 mr-2">Fin:</span>
                                                 {hist.fecha_fin ? (
                                                     <span className="text-sm text-slate-500 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-md">{hist.fecha_fin}</span>
                                                 ) : (
-                                                    <span className="text-sm text-rose-500 font-medium">Actualmente habitando</span>
+                                                    <div className="flex flex-col sm:items-end gap-2">
+                                                        <span className="text-sm text-rose-500 font-medium">Actualmente habitando</span>
+                                                        <button
+                                                            disabled={saving}
+                                                            onClick={() => handleFinalizarContrato(hist)}
+                                                            className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 disabled:bg-rose-400 text-white font-bold rounded-lg transition text-[10px] uppercase tracking-wider shadow-sm"
+                                                        >
+                                                            Finalizar Contrato
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>

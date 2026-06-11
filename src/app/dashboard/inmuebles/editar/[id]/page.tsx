@@ -22,6 +22,14 @@ export default function EditarInmueble() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorModalMessage, setErrorModalMessage] = useState('');
+
+    const showError = (msg: string) => {
+        setErrorModalMessage(msg);
+        setShowErrorModal(true);
+    };
+
     // Multiples imágenes locales
     const [dragActive, setDragActive] = useState(false);
     const [imagenes, setImagenes] = useState<File[]>([]);
@@ -198,12 +206,12 @@ export default function EditarInmueble() {
         e.preventDefault();
 
         if (formData.estado === 'arrendada' && (!formData.inquilinoId || !formData.fechaInicio)) {
-            alert('Has marcado el inmueble como ocupado. Por favor, selecciona un inquilino y la fecha de inicio del alquiler para continuar.');
+            showError('Has marcado el inmueble como ocupado. Por favor, selecciona un inquilino y la fecha de inicio del alquiler para continuar.');
             return;
         }
 
         if (!formData.direccion && !formData.enlace_google_maps) {
-            alert('Por favor provee la Dirección Exacta o un Enlace de Google Maps.');
+            showError('Por favor provee la Dirección Exacta o un Enlace de Google Maps.');
             return;
         }
 
@@ -245,7 +253,7 @@ export default function EditarInmueble() {
             if (response.ok) {
                 // Si el inmueble fue puesto en 'arrendada' e ingresaron un inquilino
                 if (formData.estado === 'arrendada' && formData.inquilinoId) {
-                    await fetch(`${API_URL}/api/v1/historial_alquiler/`, {
+                    const histRes = await fetch(`${API_URL}/api/v1/historial_alquiler/`, {
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json',
@@ -258,14 +266,65 @@ export default function EditarInmueble() {
                             esta_activo: true
                         })
                     });
+                    if (!histRes.ok) {
+                        let histErrMsg = "Hubo un error al registrar el historial de alquiler.";
+                        try {
+                            const histErrData = await histRes.json();
+                            if (histErrData && histErrData.detail) {
+                                histErrMsg = histErrData.detail;
+                            } else if (histErrData && typeof histErrData === 'object') {
+                                histErrMsg = Object.entries(histErrData)
+                                    .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+                                    .join('\n');
+                            }
+                        } catch (e) {}
+                        showError(histErrMsg);
+                        setSaving(false);
+                        return;
+                    }
                 }
                 router.push(`/dashboard/inmuebles/${id}`);
             } else {
-                alert("Hubo un error al actualizar el inmueble.");
+                let errorMsg = "Hubo un error al actualizar el inmueble.";
+                try {
+                    const errorData = await response.json();
+                    console.error("Error al actualizar:", errorData);
+                    if (errorData && typeof errorData === 'object') {
+                        if (errorData.error) {
+                            const err = errorData.error;
+                            if (typeof err === 'string') {
+                                errorMsg = err;
+                            } else if (typeof err === 'object') {
+                                if (err.details && typeof err.details === 'object' && Object.keys(err.details).length > 0) {
+                                    errorMsg = Object.entries(err.details)
+                                        .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+                                        .join('\n');
+                                } else if (err.message) {
+                                    errorMsg = err.message;
+                                }
+                            }
+                        } else if (errorData.detail) {
+                            errorMsg = errorData.detail;
+                        } else {
+                            errorMsg = Object.entries(errorData)
+                                .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+                                .join('\n');
+                        }
+                    }
+                } catch (jsonErr) {
+                    try {
+                        const rawText = await response.text();
+                        console.error("Error al actualizar (texto):", rawText);
+                        if (rawText) {
+                            errorMsg = rawText;
+                        }
+                    } catch (textErr) {}
+                }
+                showError(errorMsg);
             }
         } catch (error) {
             console.error(error);
-            alert("Error de conexión con el servidor.");
+            showError("Error de conexión con el servidor.");
         } finally {
             setSaving(false);
         }
@@ -460,6 +519,26 @@ export default function EditarInmueble() {
                     </div>
                 </form>
             </div>
+
+            {/* Error Modal */}
+            {showErrorModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xl p-8 animate-in zoom-in-95 duration-200 flex flex-col items-center text-center">
+                        <div className="w-16 h-16 bg-rose-50 dark:bg-rose-950/30 rounded-full flex items-center justify-center text-rose-500 mb-4 border border-rose-100 dark:border-rose-900/40">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        </div>
+                        <h3 className="text-xl font-black text-slate-950 dark:text-white mb-2">Error</h3>
+                        <p className="text-slate-600 dark:text-slate-300 text-sm mb-6 whitespace-pre-wrap">{errorModalMessage}</p>
+                        <button
+                            type="button"
+                            onClick={() => setShowErrorModal(false)}
+                            className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition shadow-md focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
