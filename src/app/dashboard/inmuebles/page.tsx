@@ -432,7 +432,7 @@ export default function InmueblesPage() {
                                     className="w-full p-4 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/60 border border-slate-100 dark:border-slate-800/80 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-between group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/20 flex items-center justify-center text-rose-600 dark:text-rose-400">
+                                        <div className="w-8 h-8 rounded-xl bg-rose-600 dark:bg-rose-500 flex items-center justify-center text-white shadow-lg shadow-rose-600/20">
                                             <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                             </svg>
@@ -453,7 +453,7 @@ export default function InmueblesPage() {
                                         className="w-full p-4 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/60 border border-slate-100 dark:border-slate-800/80 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-between group"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                            <div className="w-8 h-8 rounded-xl bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-600/20">
                                                 <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -491,7 +491,7 @@ export default function InmueblesPage() {
                                         className="w-full p-4 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 border border-rose-200/50 dark:border-rose-800/50 text-rose-600 dark:text-rose-400 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-between group"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-xl bg-rose-600/10 flex items-center justify-center text-rose-600">
+                                            <div className="w-8 h-8 rounded-xl bg-rose-600 dark:bg-rose-500 flex items-center justify-center text-white shadow-lg shadow-rose-600/20">
                                                 <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
@@ -635,7 +635,7 @@ export default function InmueblesPage() {
                             <div key={inv.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col gap-5">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-14 h-14 bg-blue-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-blue-600 overflow-hidden relative border border-slate-100 dark:border-slate-800 shadow-inner shrink-0">
+                                        <div className="w-14 h-14 bg-blue-600 dark:bg-blue-500 rounded-2xl flex items-center justify-center text-white overflow-hidden relative shadow-lg shadow-blue-600/20 shrink-0">
                                             {inv.cover_image ? (
                                                 <img src={getImageUrl(inv.cover_image)} alt={inv.owner_name} className="w-full h-full object-cover" />
                                             ) : (

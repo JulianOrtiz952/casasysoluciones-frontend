@@ -19,7 +19,9 @@ interface Stats {
         inmueble: string;
         tipo: string;
         prioridad: string;
+        prioridad_label: string;
         estado: string;
+        estado_label: string;
         fecha: string;
     }>;
 }
@@ -97,23 +99,71 @@ export default function DashboardSummary() {
 
             {/* Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                {[
-                    { label: 'Total Inmuebles', value: stats?.overview.total_inmuebles, icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', color: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600' },
-                    { label: 'Disponibles', value: stats?.overview.disponibles, icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', color: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600' },
-                    { label: 'Inquilinos Activos', value: stats?.overview.inquilinos_activos, icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', color: 'bg-purple-50 dark:bg-purple-500/10 text-purple-600' },
-                    { label: 'Tickets Abiertos', value: stats?.overview.tickets_abiertos, icon: 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z', color: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600' },
-                    { label: 'Tickets Urgentes', value: stats?.overview.tickets_urgentes, icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', color: 'bg-rose-50 dark:bg-rose-500/10 text-rose-600' },
-                ].map((stat, i) => (
-                    <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
-                        <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center shrink-0`}>
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={stat.icon}></path></svg>
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
-                            <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">{stat.value ?? 0}</p>
-                        </div>
+                {/* Total Inmuebles */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-4 group">
+                    <div className="w-12 h-12 bg-indigo-600 dark:bg-indigo-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-600/20 group-hover:scale-110 transition-transform duration-200">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 9.75L12 3l9 6.75V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.75z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 21V12h6v9" />
+                        </svg>
                     </div>
-                ))}
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1.5">Total Inmuebles</p>
+                        <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">{stats?.overview.total_inmuebles ?? 0}</p>
+                    </div>
+                </div>
+
+                {/* Disponibles */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-4 group">
+                    <div className="w-12 h-12 bg-emerald-600 dark:bg-emerald-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-emerald-600/20 group-hover:scale-110 transition-transform duration-200">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1.5">Disponibles</p>
+                        <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">{stats?.overview.disponibles ?? 0}</p>
+                    </div>
+                </div>
+
+                {/* Inquilinos Activos */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-4 group">
+                    <div className="w-12 h-12 bg-violet-600 dark:bg-violet-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-violet-600/20 group-hover:scale-110 transition-transform duration-200">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1.5">Inquilinos Activos</p>
+                        <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">{stats?.overview.inquilinos_activos ?? 0}</p>
+                    </div>
+                </div>
+
+                {/* Tickets Abiertos */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-4 group">
+                    <div className="w-12 h-12 bg-amber-600 dark:bg-amber-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-amber-600/20 group-hover:scale-110 transition-transform duration-200">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1.5">Tickets Abiertos</p>
+                        <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">{stats?.overview.tickets_abiertos ?? 0}</p>
+                    </div>
+                </div>
+
+                {/* Tickets Urgentes */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-rose-200/80 dark:border-rose-900/50 bg-gradient-to-br from-white to-rose-50/40 dark:from-slate-900 dark:to-rose-950/20 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-4 group">
+                    <div className="w-12 h-12 bg-rose-600 dark:bg-rose-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-rose-600/20 group-hover:scale-110 transition-transform duration-200">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold text-rose-400 dark:text-rose-500 uppercase tracking-widest leading-none mb-1.5">Tickets Urgentes</p>
+                        <p className="text-2xl font-black text-rose-600 dark:text-rose-400 leading-none">{stats?.overview.tickets_urgentes ?? 0}</p>
+                    </div>
+                </div>
             </div>
 
             {/* Charts Row */}
@@ -132,17 +182,24 @@ export default function DashboardSummary() {
                             <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                                 <circle cx="18" cy="18" r="15.915" fill="none" stroke="#f1f5f9" strokeWidth="3" className="dark:stroke-slate-800"></circle>
                                 {(() => {
-                                    const total = Object.values(stats?.tickets_by_status || {}).reduce((a, b) => a + b, 0) || 1;
-                                    let offset = 0;
-                                    const colors = { open: '#f59e0b', in_progress: '#3b82f6', resolved: '#10b981', closed: '#64748b' };
-                                    return Object.entries(stats?.tickets_by_status || {}).map(([status, count], i) => {
-                                        const percentage = (count / total) * 100;
-                                        const dash = `${percentage} ${100 - percentage}`;
-                                        const res = <circle key={i} cx="18" cy="18" r="15.915" fill="none" stroke={colors[status as keyof typeof colors] || '#000'} strokeWidth="3" strokeDasharray={dash} strokeDashoffset={-offset}></circle>;
-                                        offset += percentage;
-                                        return res;
-                                    });
-                                })()}
+                                        const total = Object.values(stats?.tickets_by_status || {}).reduce((a, b) => a + b, 0) || 1;
+                                        let offset = 0;
+                                        const colors: Record<string, string> = {
+                                            DRAFT: '#94a3b8',
+                                            OPEN: '#f59e0b',
+                                            ACCEPTED: '#3b82f6',
+                                            IN_PROGRESS: '#6366f1',
+                                            REJECTED: '#f43f5e',
+                                            CLOSED: '#10b981',
+                                        };
+                                        return Object.entries(stats?.tickets_by_status || {}).map(([status, count], i) => {
+                                            const percentage = (count / total) * 100;
+                                            const dash = `${percentage} ${100 - percentage}`;
+                                            const res = <circle key={i} cx="18" cy="18" r="15.915" fill="none" stroke={colors[status] || '#94a3b8'} strokeWidth="3" strokeDasharray={dash} strokeDashoffset={-offset}></circle>;
+                                            offset += percentage;
+                                            return res;
+                                        });
+                                    })()}
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                                 <span className="text-3xl font-black text-slate-900 dark:text-white leading-none">{Object.values(stats?.tickets_by_status || {}).reduce((a, b) => a + b, 0)}</span>
@@ -151,10 +208,12 @@ export default function DashboardSummary() {
                         </div>
                         <div className="grid grid-cols-2 gap-4 flex-1 w-full">
                             {[
-                                { label: 'Abiertos', key: 'open', color: 'bg-amber-500' },
-                                { label: 'En progreso', key: 'in_progress', color: 'bg-blue-500' },
-                                { label: 'Resueltos', key: 'resolved', color: 'bg-emerald-500' },
-                                { label: 'Cerrados', key: 'closed', color: 'bg-slate-400' },
+                                { label: 'Borrador',    key: 'DRAFT',       color: 'bg-slate-400' },
+                                { label: 'Abierto',     key: 'OPEN',        color: 'bg-amber-500' },
+                                { label: 'Aceptado',    key: 'ACCEPTED',    color: 'bg-blue-500' },
+                                { label: 'En proceso',  key: 'IN_PROGRESS', color: 'bg-indigo-500' },
+                                { label: 'Rechazado',   key: 'REJECTED',    color: 'bg-rose-500' },
+                                { label: 'Cerrado',     key: 'CLOSED',      color: 'bg-emerald-500' },
                             ].map((item, i) => (
                                 <div key={i} className="flex items-center gap-2">
                                     <div className={`w-3 h-3 ${item.color} rounded-full`}></div>
@@ -179,10 +238,9 @@ export default function DashboardSummary() {
 
                     <div className="h-48 flex items-end justify-between gap-4 px-2">
                         {[
-                            { label: 'Baja', key: 'low', color: 'bg-slate-400' },
-                            { label: 'Media', key: 'medium', color: 'bg-orange-500' },
-                            { label: 'Alta', key: 'high', color: 'bg-rose-500' },
-                            { label: 'Urgente', key: 'urgent', color: 'bg-rose-900' },
+                            { label: 'Leve',       key: 'LOW',    color: 'bg-slate-400' },
+                            { label: 'Importante', key: 'MEDIUM', color: 'bg-orange-500' },
+                            { label: 'Urgente',    key: 'HIGH',   color: 'bg-rose-600' },
                         ].map((item, i) => {
                             const val = stats?.tickets_by_priority[item.key] || 0;
                             const max = Math.max(...Object.values(stats?.tickets_by_priority || {}), 1);
@@ -233,22 +291,26 @@ export default function DashboardSummary() {
                                     <td className="px-8 py-4 text-sm text-slate-500 dark:text-slate-500">{ticket.tipo}</td>
                                     <td className="px-8 py-4">
                                         <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                            ticket.prioridad === 'high' ? 'bg-rose-50 text-rose-600' : 
-                                            ticket.prioridad === 'medium' ? 'bg-orange-50 text-orange-600' : 'bg-slate-50 text-slate-600'
+                                            ticket.prioridad === 'HIGH' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400' : 
+                                            ticket.prioridad === 'MEDIUM' ? 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400' : 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
                                         }`}>
                                             <div className={`w-1 h-1 rounded-full ${
-                                                ticket.prioridad === 'high' ? 'bg-rose-600' : 
-                                                ticket.prioridad === 'medium' ? 'bg-orange-600' : 'bg-slate-600'
+                                                ticket.prioridad === 'HIGH' ? 'bg-rose-600' : 
+                                                ticket.prioridad === 'MEDIUM' ? 'bg-orange-500' : 'bg-slate-400'
                                             }`}></div>
-                                            {ticket.prioridad}
+                                            {ticket.prioridad_label || ticket.prioridad}
                                         </span>
                                     </td>
                                     <td className="px-8 py-4">
                                         <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-tight ${
-                                            ticket.estado === 'resolved' ? 'bg-emerald-100 text-emerald-700' :
-                                            ticket.estado === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                                            ticket.estado === 'CLOSED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' :
+                                            ticket.estado === 'IN_PROGRESS' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' :
+                                            ticket.estado === 'ACCEPTED' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' :
+                                            ticket.estado === 'REJECTED' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400' :
+                                            ticket.estado === 'DRAFT' ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' :
+                                            'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
                                         }`}>
-                                            {ticket.estado}
+                                            {ticket.estado_label || ticket.estado}
                                         </span>
                                     </td>
                                     <td className="px-8 py-4 text-sm text-slate-400">{ticket.fecha}</td>

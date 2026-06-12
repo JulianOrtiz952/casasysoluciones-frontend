@@ -832,7 +832,7 @@ export default function TicketDetailPage() {
                     
                     {/* Problem Description Card */}
                     <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex items-start gap-4">
-                        <div className="w-10 h-10 bg-rose-50 dark:bg-rose-950/20 text-rose-500 rounded-2xl flex items-center justify-center shrink-0">
+                        <div className="w-10 h-10 bg-rose-600 dark:bg-rose-500 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-rose-600/20">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -1092,7 +1092,7 @@ export default function TicketDetailPage() {
                             {isClosureTicket && (
                                 <div className="space-y-4 border-b border-teal-200/50 dark:border-teal-900/50 pb-6">
                                     <div className="flex items-center gap-3 text-teal-700 dark:text-teal-400">
-                                        <div className="w-9 h-9 bg-teal-100 dark:bg-teal-900/40 rounded-xl flex items-center justify-center shrink-0">
+                                        <div className="w-9 h-9 bg-teal-600 dark:bg-teal-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-teal-600/20">
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
                                             </svg>
@@ -1160,9 +1160,9 @@ export default function TicketDetailPage() {
                                                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Estado general</label>
                                                                     <div className="grid grid-cols-3 gap-2">
                                                                         {[
-                                                                            { value: 'GOOD', label: 'Bueno', activeColor: 'bg-emerald-600 text-white shadow-emerald-600/20 shadow-md', inactiveColor: 'bg-slate-50 dark:bg-slate-800 text-slate-650 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80' },
-                                                                            { value: 'REGULAR', label: 'Regular', activeColor: 'bg-amber-500 text-white shadow-amber-500/20 shadow-md', inactiveColor: 'bg-slate-50 dark:bg-slate-800 text-slate-650 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80' },
-                                                                            { value: 'BAD', label: 'Malo', activeColor: 'bg-rose-600 text-white shadow-rose-600/20 shadow-md', inactiveColor: 'bg-slate-50 dark:bg-slate-800 text-slate-650 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80' }
+                                                                            { value: 'GOOD', label: 'Bueno', activeColor: 'bg-emerald-600 text-white shadow-emerald-600/20 shadow-md', inactiveColor: 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80' },
+                                                                            { value: 'REGULAR', label: 'Regular', activeColor: 'bg-amber-500 text-white shadow-amber-500/20 shadow-md', inactiveColor: 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80' },
+                                                                            { value: 'BAD', label: 'Malo', activeColor: 'bg-rose-600 text-white shadow-rose-600/20 shadow-md', inactiveColor: 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80' }
                                                                         ].map(opt => (
                                                                             <button
                                                                                 key={opt.value}
@@ -1194,7 +1194,7 @@ export default function TicketDetailPage() {
                                                                                         updated[idx].items[itemIdx].checked = e.target.checked;
                                                                                         setFinalConditions(updated);
                                                                                     }}
-                                                                                    className="w-4 h-4 rounded border-slate-300 text-teal-650 focus:ring-teal-500 focus:ring-offset-0"
+                                                                                    className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 focus:ring-offset-0"
                                                                                 />
                                                                                 <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">{item.name}</span>
                                                                             </label>
@@ -1232,7 +1232,7 @@ export default function TicketDetailPage() {
                             )}
 
                             <div className="flex items-center gap-3 text-teal-700 dark:text-teal-400">
-                                <div className="w-9 h-9 bg-teal-100 dark:bg-teal-900/40 rounded-xl flex items-center justify-center shrink-0">
+                                <div className="w-9 h-9 bg-teal-600 dark:bg-teal-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-teal-600/20">
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                     </svg>
@@ -1298,7 +1298,7 @@ export default function TicketDetailPage() {
                     {showActionRequired && (
                         <div className="bg-rose-50/50 dark:bg-rose-950/10 border border-rose-200 dark:border-rose-900/50 rounded-3xl p-6 shadow-sm space-y-4">
                             <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
-                                <div className="w-9 h-9 bg-rose-100 dark:bg-rose-900/40 rounded-xl flex items-center justify-center shrink-0">
+                                <div className="w-9 h-9 bg-rose-600 dark:bg-rose-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-rose-600/20">
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                                     </svg>
@@ -1378,7 +1378,7 @@ export default function TicketDetailPage() {
                     {showClosureApproval && (
                         <div className="bg-amber-50/60 dark:bg-amber-950/10 border-2 border-amber-400 dark:border-amber-700 rounded-3xl p-6 shadow-sm space-y-4 animate-in fade-in duration-300">
                             <div className="flex items-center gap-3 text-amber-700 dark:text-amber-400">
-                                <div className="w-9 h-9 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center shrink-0">
+                                <div className="w-9 h-9 bg-amber-600 dark:bg-amber-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-amber-600/20">
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                     </svg>
@@ -1463,7 +1463,7 @@ export default function TicketDetailPage() {
                                 type="button"
                                 disabled={actionLoading}
                                 onClick={handleRejectClosureAdmin}
-                                className="w-full py-3 bg-rose-650 hover:bg-rose-500 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-rose-600/20 flex items-center justify-center gap-2 cursor-pointer mt-3"
+                                className="w-full py-3 bg-rose-600 hover:bg-rose-500 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-rose-600/20 flex items-center justify-center gap-2 cursor-pointer mt-3"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />

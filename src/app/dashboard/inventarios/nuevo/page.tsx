@@ -10,6 +10,7 @@ interface Property {
     address: string;
     city: string;
     type_display: string;
+    owner_name?: string;
 }
 
 interface Tenant {
@@ -524,7 +525,7 @@ export default function NuevoInventarioPage() {
                                     }}
                                     className="absolute inset-0 opacity-0 cursor-pointer"
                                 />
-                                <div className="w-14 h-14 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center mx-auto text-rose-600 group-hover:scale-110 transition-transform">
+                                <div className="w-14 h-14 bg-rose-600 dark:bg-rose-500 rounded-2xl flex items-center justify-center mx-auto text-white shadow-lg shadow-rose-600/20 group-hover:scale-110 transition-transform">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 20M7 14H22M9 5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                                 </div>
                                 <div>
@@ -570,7 +571,7 @@ export default function NuevoInventarioPage() {
                     {step === 4 && (
                         <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
                             <div className="p-12 text-center space-y-4">
-                                <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mx-auto text-emerald-600">
+                                <div className="w-20 h-20 bg-emerald-600 dark:bg-emerald-500 rounded-full flex items-center justify-center mx-auto text-white shadow-xl shadow-emerald-600/20">
                                     <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 </div>
                                 <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Inventario Completo</h3>

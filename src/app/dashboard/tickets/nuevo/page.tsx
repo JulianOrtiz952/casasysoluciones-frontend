@@ -9,6 +9,7 @@ interface Property {
     code: string;
     address: string;
     city: string;
+    owner_name?: string;
 }
 
 export default function NuevoTicketPage() {
