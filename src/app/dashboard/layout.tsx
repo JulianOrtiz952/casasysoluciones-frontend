@@ -69,6 +69,10 @@ const icons = {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
             d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
     ),
+    upload: (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+    ),
 };
 
 // ─── SVG icon wrapper ─────────────────────────────────────────────────────────
@@ -155,6 +159,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (pathname?.startsWith('/dashboard/inmuebles')) return rolActual === 'TENANT' ? 'Mi Propiedad' : 'Inmuebles';
         if (pathname?.startsWith('/dashboard/inquilinos')) return 'Inquilinos';
         if (pathname?.startsWith('/dashboard/usuarios')) return 'Usuarios';
+        if (pathname?.startsWith('/dashboard/carga-masiva')) return 'Carga Masiva';
         if (pathname?.startsWith('/dashboard/calculadora')) return 'Calculadora';
         if (pathname?.startsWith('/dashboard/inventarios')) return rolActual === 'TENANT' ? 'Inventario' : 'Inventarios';
         if (pathname?.startsWith('/dashboard/tickets')) return rolActual === 'TECHNICIAN' ? 'Mis Tickets' : 'Tickets';
@@ -191,6 +196,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <NavLink href="/dashboard/usuarios" label="Usuarios"
                     active={checkActive('/dashboard/usuarios')} onClick={onClickItem}
                     icon={<Icon>{icons.users}</Icon>} />
+            )}
+            {rolActual === 'ADMIN' && (
+                <NavLink href="/dashboard/carga-masiva" label="Carga Masiva"
+                    active={checkActive('/dashboard/carga-masiva')} onClick={onClickItem}
+                    icon={<Icon>{icons.upload}</Icon>} />
             )}
             {rolActual !== 'TENANT' && rolActual !== 'TECHNICIAN' && (
                 <NavLink href="/dashboard/calculadora" label="Calculadora"

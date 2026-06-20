@@ -76,7 +76,7 @@ interface Ticket {
     damage_type_other: string;
     priority: 'LOW' | 'MEDIUM' | 'HIGH';
     priority_display: string;
-    status: 'DRAFT' | 'OPEN' | 'ACCEPTED' | 'IN_PROGRESS' | 'REJECTED' | 'CLOSED';
+    status: 'DRAFT' | 'OPEN' | 'ACCEPTED' | 'IN_PROGRESS' | 'REJECTED' | 'CLOSED' | 'PENDING_ADMIN' | 'PENDING_TENANT';
     status_display: string;
     created_at: string;
     updated_at: string;
@@ -431,7 +431,11 @@ export default function TicketDetailPage() {
         setIsRejectionSubmitting(true);
         try {
             const token = getToken();
-            const res = await fetch(`${API_URL}/api/v1/tickets/${params.id}/reject/`, {
+            const isClosure = ticket?.damage_type === 'CLOSURE';
+            const endpoint = isClosure 
+                ? `${API_URL}/api/v1/tickets/${params.id}/reject/` 
+                : `${API_URL}/api/v1/tickets/${params.id}/admin-reject/`;
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -460,6 +464,45 @@ export default function TicketDetailPage() {
         } finally {
             setIsRejectionSubmitting(false);
         }
+    };
+
+    const handleAdminApproveNormal = async () => {
+        const confirmed = await showConfirm(
+            '¿Deseas aprobar y cerrar esta reparación?',
+            'Aprobar Reparación'
+        );
+        if (!confirmed) return;
+
+        setActionLoading(true);
+        try {
+            const token = getToken();
+            const res = await fetch(`${API_URL}/api/v1/tickets/${params.id}/admin-approve/`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const updated = await res.json();
+                setTicket(updated);
+                setAdminStatus(updated.status);
+                setAdminContractor(updated.assigned_contractor_name || '');
+                setSelectedTechnicians(updated.assigned_technicians || []);
+                fetchTicketHistory();
+                await showAlert('Reparación aprobada y ticket cerrado con éxito.', 'success');
+            } else {
+                const errData = await res.json().catch(() => null);
+                await showAlert(errData?.error || 'Ocurrió un error al aprobar la reparación.', 'error');
+            }
+        } catch (err) {
+            console.error('Error approving repair:', err);
+            await showAlert('Error de conexión con el servidor.', 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleAdminRejectNormal = () => {
+        setRejectionModalText('');
+        setShowRevertModal(true);
     };
 
     const handleRejectClosureAdmin = async () => {
@@ -588,7 +631,7 @@ export default function TicketDetailPage() {
     const handleTechnicianComplete = async () => {
         const confirmMsg = isClosureTicket
             ? '¿Estás seguro de marcar este inventario final como completado? Un administrador o asistente deberá aprobarlo para finalizar el contrato.'
-            : '¿Estás seguro de marcar este ticket como completado? El inquilino deberá confirmar la reparación.';
+            : '¿Estás seguro de marcar este ticket como completado? El administrador deberá aprobar la reparación.';
         const confirmed = await showConfirm(confirmMsg, 'Marcar como Completado');
         if (!confirmed) return;
 
@@ -623,7 +666,7 @@ export default function TicketDetailPage() {
                 fetchTicketHistory();
                 const successMsg = isClosureTicket
                     ? 'Inventario final completado. El administrador recibirá una notificación para aprobarlo.'
-                    : 'Ticket marcado como completado. El inquilino deberá confirmar la reparación.';
+                    : 'Ticket marcado como completado. El administrador recibirá una notificación para aprobar la reparación.';
                 await showAlert(successMsg, 'success');
             } else {
                 const errData = await res.json().catch(() => null);
@@ -667,6 +710,8 @@ export default function TicketDetailPage() {
         IN_PROGRESS: 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 border border-blue-200/50 dark:border-blue-900/30',
         REJECTED: 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200/50 dark:border-rose-900/30',
         CLOSED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/30',
+        PENDING_ADMIN: 'bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400 border border-purple-200/50 dark:border-purple-900/30',
+        PENDING_TENANT: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-400 border border-fuchsia-200/50 dark:border-fuchsia-900/30',
     };
 
     const priorityBadges = {
@@ -677,6 +722,7 @@ export default function TicketDetailPage() {
 
     // Timeline calculations
     const getTimeline = () => {
+        if (!ticket) return [];
         const list = [
             {
                 title: 'Abierto',
@@ -695,11 +741,25 @@ export default function TicketDetailPage() {
             });
         }
 
-        if (ticket.status === 'CLOSED') {
+        if (ticket.status === 'PENDING_ADMIN') {
+            list.push({
+                title: 'Revisión Administración',
+                date: new Date(ticket.updated_at).toLocaleString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                desc: 'Reparación realizada. Esperando visto bueno del administrador.',
+                done: true,
+            });
+        } else if (ticket.status === 'PENDING_TENANT') {
+            list.push({
+                title: 'Confirmación Inquilino',
+                date: new Date(ticket.updated_at).toLocaleString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                desc: 'Visto bueno otorgado. Esperando confirmación de satisfacción del inquilino.',
+                done: true,
+            });
+        } else if (ticket.status === 'CLOSED') {
             list.push({
                 title: 'Cerrado',
                 date: ticket.updated_at ? new Date(ticket.updated_at).toLocaleString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
-                desc: 'El inquilino ha confirmado que la reparación fue satisfactoria.',
+                desc: 'Reparación confirmada y ticket finalizado.',
                 done: true,
             });
         }
@@ -720,7 +780,7 @@ export default function TicketDetailPage() {
             }
         ];
 
-        if (ticket.status === 'IN_PROGRESS' || ticket.status === 'ACCEPTED') {
+        if (ticket.status !== 'DRAFT' && ticket.status !== 'OPEN') {
             msgs.push({
                 sender: 'Soporte',
                 date: new Date(ticket.updated_at).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
@@ -746,11 +806,11 @@ export default function TicketDetailPage() {
     const isStaff = userRole === 'ADMIN' || userRole === 'ASSISTANT';
     const isTechnician = userRole === 'TECHNICIAN';
 
-    // Acción requerida al inquilino: NO aplica para tickets de Cierre de Contrato
-    const showActionRequired = (ticket.status === 'IN_PROGRESS' || ticket.status === 'ACCEPTED') && userRole === 'TENANT' && ticket.damage_type !== 'CLOSURE';
+    // Acción requerida al inquilino: deshabilitado porque la aprobación admin es definitiva
+    const showActionRequired = false;
 
-    // Aprobación de cierre: solo admin/asistente, cuando el ticket es CLOSURE y está IN_PROGRESS
-    const showClosureApproval = isStaff && ticket.damage_type === 'CLOSURE' && ticket.status === 'IN_PROGRESS';
+    // Aprobación de cierre: solo admin/asistente, cuando el ticket es CLOSURE y está PENDING_ADMIN
+    const showClosureApproval = isStaff && ticket.damage_type === 'CLOSURE' && ticket.status === 'PENDING_ADMIN';
 
     // Count technician's own attachments
     const techAttachments = ticket.attachments.filter(a => a.uploaded_by_detail?.role === 'TECHNICIAN');
@@ -761,7 +821,7 @@ export default function TicketDetailPage() {
 
     const canComplete = isTechnician && 
         techAttachments.length > 0 && 
-        ticket.status !== 'CLOSED' && 
+        (ticket.status === 'IN_PROGRESS' || ticket.status === 'ACCEPTED' || ticket.status === 'REJECTED' || ticket.status === 'OPEN') && 
         !hasUnratedClosureSpaces;
 
     const getFullImageUrl = (path: string) => {
@@ -1087,7 +1147,7 @@ export default function TicketDetailPage() {
                     </div>
 
                     {/* Technician Panel — Upload Evidence & Complete */}
-                    {isTechnician && ticket.status !== 'CLOSED' && (
+                    {isTechnician && (ticket.status === 'IN_PROGRESS' || ticket.status === 'ACCEPTED' || ticket.status === 'REJECTED' || ticket.status === 'OPEN') && (
                         <div className="bg-teal-50/50 dark:bg-teal-950/10 border border-teal-200 dark:border-teal-900/50 rounded-3xl p-6 shadow-sm space-y-6">
                             {isClosureTicket && (
                                 <div className="space-y-4 border-b border-teal-200/50 dark:border-teal-900/50 pb-6">
@@ -1304,73 +1364,72 @@ export default function TicketDetailPage() {
                                     </svg>
                                 </div>
                                 <h3 className="text-xs font-black uppercase tracking-widest">
-                                    Acción Requerida
+                                    Confirmar Reparación
                                 </h3>
                             </div>
                             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-                                Una vez finalizada la reparación, por favor confirma si el resultado fue satisfactorio.
+                                Por favor confirma que la reparación se ha completado en tu inmueble para cerrar esta solicitud.
                             </p>
 
-                            {!reportingProblem ? (
-                                <div className="space-y-3">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">
-                                        ¿La reparación fue satisfactoria?
-                                    </p>
-                                    <button
-                                        type="button"
-                                        disabled={actionLoading}
-                                        onClick={handleConfirmRepair}
-                                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                        Confirmar
-                                    </button>
-                                    <button
-                                        type="button"
-                                        disabled={actionLoading}
-                                        onClick={() => setReportingProblem(true)}
-                                        className="w-full py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-rose-500 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                        </svg>
-                                        Reportar problema
-                                    </button>
+                            <div className="space-y-3">
+                                <button
+                                    type="button"
+                                    disabled={actionLoading}
+                                    onClick={handleConfirmRepair}
+                                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer animate-pulse"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    Confirmar Reparación Realizada
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Normal Ticket Admin Approval Panel — Only for admin/assistant on standard tickets in PENDING_ADMIN */}
+                    {isStaff && ticket.damage_type !== 'CLOSURE' && ticket.status === 'PENDING_ADMIN' && (
+                        <div className="bg-purple-50/60 dark:bg-purple-950/10 border-2 border-purple-400 dark:border-purple-800 rounded-3xl p-6 shadow-sm space-y-4 animate-in fade-in duration-300">
+                            <div className="flex items-center gap-3 text-purple-700 dark:text-purple-400">
+                                <div className="w-9 h-9 bg-purple-600 dark:bg-purple-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-purple-600/20">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
                                 </div>
-                            ) : (
-                                <form onSubmit={handleReportProblem} className="space-y-3.5 pt-2 border-t border-rose-100 dark:border-rose-950/20">
-                                    <div>
-                                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-1">
-                                            Describe el inconveniente *
-                                        </label>
-                                        <textarea
-                                            rows={3}
-                                            value={rejectionReason}
-                                            onChange={(e) => setRejectionReason(e.target.value)}
-                                            placeholder="Detalla qué falló o sigue roto..."
-                                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs font-semibold outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all text-slate-800 dark:text-white"
-                                        />
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setReportingProblem(false)}
-                                            className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl transition-colors cursor-pointer"
-                                        >
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={actionLoading}
-                                            className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-rose-600/10 cursor-pointer"
-                                        >
-                                            Enviar
-                                        </button>
-                                    </div>
-                                </form>
-                            )}
+                                <h3 className="text-xs font-black uppercase tracking-widest">
+                                    Revisión y Visto Bueno de Reparación
+                                </h3>
+                            </div>
+
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                                El soporte técnico ha marcado esta reparación como realizada. Por favor, verifica el trabajo (puedes revisar las evidencias adjuntas) y decide si otorgas el visto bueno o el visto malo.
+                            </p>
+
+                            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    disabled={actionLoading}
+                                    onClick={handleAdminApproveNormal}
+                                    className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-purple-600/20 flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    {actionLoading ? 'Procesando...' : 'Dar Visto Bueno (Aprobar)'}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    disabled={actionLoading}
+                                    onClick={handleAdminRejectNormal}
+                                    className="flex-1 py-3 bg-rose-600 hover:bg-rose-500 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-rose-600/20 flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Dar Visto Malo (Rechazar)
+                                </button>
+                            </div>
                         </div>
                     )}
 
@@ -1502,6 +1561,8 @@ export default function TicketDetailPage() {
                                         <option value="OPEN">Abierto</option>
                                         <option value="ACCEPTED">Aceptado</option>
                                         <option value="IN_PROGRESS">En proceso</option>
+                                        <option value="PENDING_ADMIN">Pendiente de Admin</option>
+                                        <option value="PENDING_TENANT">Pendiente de Inquilino</option>
                                         <option value="REJECTED">Rechazado</option>
                                         <option value="CLOSED">Cerrado</option>
                                     </select>
@@ -1885,7 +1946,9 @@ export default function TicketDetailPage() {
                                 Rechazar Solicitud
                             </h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-                                Por favor ingresa el motivo detallado de por qué se rechaza esta solicitud de cierre de contrato. Esto será visible en el historial.
+                                {ticket?.damage_type === 'CLOSURE' 
+                                    ? 'Por favor ingresa el motivo detallado de por qué se rechaza esta solicitud de cierre de contrato. Esto será visible en el historial.'
+                                    : 'Por favor ingresa el motivo del rechazo de la reparación. Esto devolverá el ticket a "En proceso" para el técnico.'}
                             </p>
                         </div>
                         

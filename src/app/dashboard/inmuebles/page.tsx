@@ -30,6 +30,7 @@ interface Inmueble {
     observations?: string | null;
     has_active_closure_request?: boolean;
     active_closure_ticket_id?: number | null;
+    is_active?: boolean;
 }
 
 const statusTags: Record<string, { label: string, color: string, bg: string }> = {
@@ -59,6 +60,7 @@ export default function InmueblesPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [userId, setUserId] = useState<number | null>(null);
     const [cancelingLease, setCancelingLease] = useState(false);
+    const [includeInactive, setIncludeInactive] = useState(false);
 
     // Múltiples propiedades y estados de modal
     const [selectedPropIndex, setSelectedPropIndex] = useState(0);
@@ -103,9 +105,13 @@ export default function InmueblesPage() {
             try {
                 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
                 const token = localStorage.getItem('token');
-                const endpoint = userRole === 'TENANT'
+                let endpoint = userRole === 'TENANT'
                     ? `${API_URL}/api/v1/properties/mine/`
                     : `${API_URL}/api/v1/properties/`;
+
+                if (userRole !== 'TENANT' && includeInactive) {
+                    endpoint += '?include_inactive=true';
+                }
 
                 const res = await fetch(endpoint, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -121,7 +127,7 @@ export default function InmueblesPage() {
             }
         };
         fetchInmuebles();
-    }, [userRole]);
+    }, [userRole, includeInactive]);
 
     const openCancelModal = (prop: Inmueble) => {
         setPropertyToCancel(prop);
@@ -616,9 +622,29 @@ export default function InmueblesPage() {
                         ))}
                     </div>
 
-                    <button className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-600 hover:text-rose-600 transition-colors shadow-sm">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/40 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-800">
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                Mostrar desactivados
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setIncludeInactive(!includeInactive)}
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                    includeInactive ? 'bg-rose-600' : 'bg-slate-200 dark:bg-slate-700'
+                                }`}
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                        includeInactive ? 'translate-x-5' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
+                        </div>
+                        <button className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-600 hover:text-rose-600 transition-colors shadow-sm">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -647,9 +673,16 @@ export default function InmueblesPage() {
                                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{inv.code} • {inv.type_display}</p>
                                         </div>
                                     </div>
-                                    <span className={`px-2.5 py-1 ${status.bg} ${status.color} rounded-lg text-[10px] font-black uppercase tracking-tight`}>
-                                        {status.label}
-                                    </span>
+                                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                        <span className={`px-2.5 py-1 ${status.bg} ${status.color} rounded-lg text-[10px] font-black uppercase tracking-tight`}>
+                                            {status.label}
+                                        </span>
+                                        {inv.is_active === false && (
+                                            <span className="px-2.5 py-1 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-100/50 dark:border-rose-900/30 rounded-lg text-[10px] font-black uppercase tracking-tight">
+                                                Desactivado
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="space-y-3">
@@ -668,12 +701,17 @@ export default function InmueblesPage() {
                                 </div>
 
                                 <div className="grid grid-cols-5 gap-2 mt-2">
-                                    <Link href={`/dashboard/inmuebles/${inv.id}`} className="col-span-2 py-3 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-white text-[11px] font-black uppercase tracking-widest text-center rounded-xl hover:bg-slate-100 transition-colors">
+                                    <Link 
+                                        href={`/dashboard/inmuebles/${inv.id}`} 
+                                        className={`${inv.active_tenant && inv.status === 'RENTED' ? 'col-span-2' : 'col-span-4'} py-3 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-white text-[11px] font-black uppercase tracking-widest text-center rounded-xl hover:bg-slate-100 transition-colors`}
+                                    >
                                         Ver detalle
                                     </Link>
-                                    <Link href={`/dashboard/inventarios/nuevo?property=${inv.id}`} className="col-span-2 py-3 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-white text-[11px] font-black uppercase tracking-widest text-center rounded-xl hover:bg-slate-100 transition-colors">
-                                        Inventario
-                                    </Link>
+                                    {inv.active_tenant && inv.status === 'RENTED' && (
+                                        <Link href={`/dashboard/inventarios/nuevo?property=${inv.id}`} className="col-span-2 py-3 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-white text-[11px] font-black uppercase tracking-widest text-center rounded-xl hover:bg-slate-100 transition-colors">
+                                            Inventario
+                                        </Link>
+                                    )}
                                     <button className="col-span-1 p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-xl hover:text-rose-600 transition-colors">
                                         <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>
                                     </button>

@@ -73,7 +73,7 @@ export default function TicketsPage() {
         open: tickets.filter(t => t.status?.toUpperCase() === 'OPEN').length,
         in_progress: tickets.filter(t => {
             const s = t.status?.toUpperCase();
-            return s === 'IN_PROGRESS' || s === 'ACCEPTED';
+            return s === 'IN_PROGRESS' || s === 'ACCEPTED' || s === 'PENDING_ADMIN' || s === 'PENDING_TENANT';
         }).length,
         closed: tickets.filter(t => {
             const s = t.status?.toUpperCase();
@@ -85,14 +85,14 @@ export default function TicketsPage() {
         if (filterStatus === 'all') return true;
         const s = t.status?.toUpperCase();
         if (filterStatus === 'open') return s === 'OPEN';
-        if (filterStatus === 'in_progress') return s === 'IN_PROGRESS' || s === 'ACCEPTED';
+        if (filterStatus === 'in_progress') return s === 'IN_PROGRESS' || s === 'ACCEPTED' || s === 'PENDING_ADMIN' || s === 'PENDING_TENANT';
         if (filterStatus === 'closed') return s === 'CLOSED' || s === 'REJECTED';
         return s === filterStatus.toUpperCase();
     });
 
     const getStatusPriority = (status: string) => {
         const s = status?.toUpperCase();
-        if (s === 'OPEN' || s === 'ACCEPTED' || s === 'IN_PROGRESS') return 1; // Active
+        if (s === 'OPEN' || s === 'ACCEPTED' || s === 'IN_PROGRESS' || s === 'PENDING_ADMIN' || s === 'PENDING_TENANT') return 1; // Active
         return 2; // Closed / Rejected
     };
 
@@ -232,7 +232,7 @@ export default function TicketsPage() {
                                 <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400 font-medium">No se encontraron tickets</td></tr>
                             ) : sortedTickets.map((t) => {
                                 const statusUpper = t.status?.toUpperCase();
-                                const isActive = statusUpper === 'OPEN' || statusUpper === 'ACCEPTED' || statusUpper === 'IN_PROGRESS';
+                                const isActive = statusUpper === 'OPEN' || statusUpper === 'ACCEPTED' || statusUpper === 'IN_PROGRESS' || statusUpper === 'PENDING_ADMIN' || statusUpper === 'PENDING_TENANT';
                                 
                                 let trClass = "transition-all duration-300 ";
                                 let borderClass = "border-l-4 ";
@@ -245,6 +245,12 @@ export default function TicketsPage() {
                                 } else if (statusUpper === 'IN_PROGRESS') {
                                     trClass += "bg-blue-500/[0.02] dark:bg-blue-500/[0.01] hover:bg-blue-500/[0.05] dark:hover:bg-blue-500/[0.03]";
                                     borderClass += "border-l-blue-500";
+                                } else if (statusUpper === 'PENDING_ADMIN') {
+                                    trClass += "bg-purple-500/[0.02] dark:bg-purple-500/[0.01] hover:bg-purple-500/[0.05] dark:hover:bg-purple-500/[0.03]";
+                                    borderClass += "border-l-purple-500";
+                                } else if (statusUpper === 'PENDING_TENANT') {
+                                    trClass += "bg-fuchsia-500/[0.02] dark:bg-fuchsia-500/[0.01] hover:bg-fuchsia-500/[0.05] dark:hover:bg-fuchsia-500/[0.03]";
+                                    borderClass += "border-l-fuchsia-500";
                                 } else {
                                     trClass += "bg-slate-500/[0.01] dark:bg-slate-500/[0.005] hover:bg-slate-500/[0.03] dark:hover:bg-slate-500/[0.02] opacity-65 hover:opacity-100";
                                     borderClass += "border-l-slate-300 dark:border-l-slate-800";
@@ -277,6 +283,8 @@ export default function TicketsPage() {
                                                 statusUpper === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400' :
                                                 statusUpper === 'ACCEPTED' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400' :
                                                 statusUpper === 'OPEN' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' :
+                                                statusUpper === 'PENDING_ADMIN' ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400' :
+                                                statusUpper === 'PENDING_TENANT' ? 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-400' :
                                                 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
                                             }`}>
                                                 {isActive && (
@@ -284,11 +292,15 @@ export default function TicketsPage() {
                                                         <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
                                                             statusUpper === 'OPEN' ? 'bg-amber-400' :
                                                             statusUpper === 'ACCEPTED' ? 'bg-indigo-400' :
+                                                            statusUpper === 'PENDING_ADMIN' ? 'bg-purple-400' :
+                                                            statusUpper === 'PENDING_TENANT' ? 'bg-fuchsia-400' :
                                                             'bg-blue-400'
                                                         }`}></span>
                                                         <span className={`relative inline-flex rounded-full h-2 w-2 ${
                                                             statusUpper === 'OPEN' ? 'bg-amber-500' :
                                                             statusUpper === 'ACCEPTED' ? 'bg-indigo-500' :
+                                                            statusUpper === 'PENDING_ADMIN' ? 'bg-purple-500' :
+                                                            statusUpper === 'PENDING_TENANT' ? 'bg-fuchsia-500' :
                                                             'bg-blue-500'
                                                         }`}></span>
                                                     </span>

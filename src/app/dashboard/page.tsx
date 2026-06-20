@@ -189,6 +189,8 @@ export default function DashboardSummary() {
                                             OPEN: '#f59e0b',
                                             ACCEPTED: '#3b82f6',
                                             IN_PROGRESS: '#6366f1',
+                                            PENDING_ADMIN: '#8b5cf6',
+                                            PENDING_TENANT: '#d946ef',
                                             REJECTED: '#f43f5e',
                                             CLOSED: '#10b981',
                                         };
@@ -208,12 +210,14 @@ export default function DashboardSummary() {
                         </div>
                         <div className="grid grid-cols-2 gap-4 flex-1 w-full">
                             {[
-                                { label: 'Borrador',    key: 'DRAFT',       color: 'bg-slate-400' },
-                                { label: 'Abierto',     key: 'OPEN',        color: 'bg-amber-500' },
-                                { label: 'Aceptado',    key: 'ACCEPTED',    color: 'bg-blue-500' },
-                                { label: 'En proceso',  key: 'IN_PROGRESS', color: 'bg-indigo-500' },
-                                { label: 'Rechazado',   key: 'REJECTED',    color: 'bg-rose-500' },
-                                { label: 'Cerrado',     key: 'CLOSED',      color: 'bg-emerald-500' },
+                                { label: 'Borrador',           key: 'DRAFT',          color: 'bg-slate-400' },
+                                { label: 'Abierto',            key: 'OPEN',           color: 'bg-amber-500' },
+                                { label: 'Aceptado',           key: 'ACCEPTED',       color: 'bg-blue-500' },
+                                { label: 'En proceso',         key: 'IN_PROGRESS',    color: 'bg-indigo-500' },
+                                { label: 'Pendiente Admin',    key: 'PENDING_ADMIN',  color: 'bg-purple-500' },
+                                { label: 'Pendiente Inquilino', key: 'PENDING_TENANT', color: 'bg-fuchsia-500' },
+                                { label: 'Rechazado',          key: 'REJECTED',       color: 'bg-rose-500' },
+                                { label: 'Cerrado',            key: 'CLOSED',         color: 'bg-emerald-500' },
                             ].map((item, i) => (
                                 <div key={i} className="flex items-center gap-2">
                                     <div className={`w-3 h-3 ${item.color} rounded-full`}></div>
@@ -308,6 +312,8 @@ export default function DashboardSummary() {
                                             ticket.estado === 'ACCEPTED' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' :
                                             ticket.estado === 'REJECTED' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400' :
                                             ticket.estado === 'DRAFT' ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' :
+                                            ticket.estado === 'PENDING_ADMIN' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400' :
+                                            ticket.estado === 'PENDING_TENANT' ? 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/20 dark:text-fuchsia-400' :
                                             'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
                                         }`}>
                                             {ticket.estado_label || ticket.estado}

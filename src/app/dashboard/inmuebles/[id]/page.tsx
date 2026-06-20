@@ -43,6 +43,7 @@ interface Inmueble {
         last_name: string;
         document_number: string;
     } | null;
+    is_active?: boolean;
 }
 
 interface Historial {
@@ -112,7 +113,8 @@ export default function DashboardInmuebleDetail() {
                         cocinas: data.kitchens,
                         garajes: data.garages,
                         es_comercial: data.is_commercial,
-                        active_tenant: data.active_tenant
+                        active_tenant: data.active_tenant,
+                        is_active: data.is_active
                     };
                     setInmueble(mappedInmueble);
                 } else { 
@@ -293,6 +295,43 @@ export default function DashboardInmuebleDetail() {
         }
     };
 
+    const handleToggleActive = async () => {
+        if (!inmueble) return;
+        if (inmueble.is_active && inmueble.active_tenant) {
+            alert("No se puede desactivar un inmueble que tiene un arrendatario activo.");
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const token = localStorage.getItem('token');
+
+            const res = await fetch(`${API_URL}/api/v1/properties/${id}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    is_active: !inmueble.is_active
+                })
+            });
+
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                const errData = await res.json().catch(() => null);
+                alert(`Error al actualizar estado del inmueble: ${errData?.message || errData?.detail || 'Error en el servidor'}`);
+            }
+        } catch (error) {
+            console.error("Error toggling property active status:", error);
+            alert("Error de conexión al actualizar el inmueble.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="h-64 flex justify-center items-center">
@@ -312,10 +351,36 @@ export default function DashboardInmuebleDetail() {
                 <div className="flex-1">
                     <div className="flex items-center justify-between">
                         <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Admin: {inmueble.titulo}</h1>
-                        <Link href={`/dashboard/inmuebles/editar/${id}`} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold tracking-wide rounded-xl transition-all shadow-sm flex items-center gap-2 text-sm">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                            Editar
-                        </Link>
+                        <div className="flex items-center gap-3">
+                            <button
+                                disabled={saving}
+                                onClick={handleToggleActive}
+                                className={`px-5 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center gap-2 ${
+                                    inmueble.is_active
+                                        ? inmueble.active_tenant
+                                            ? 'bg-slate-100 text-slate-400 dark:bg-slate-800/40 dark:text-slate-600 cursor-not-allowed opacity-60'
+                                            : 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-100/50 dark:border-rose-900/30'
+                                        : 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-900/30'
+                                }`}
+                                title={inmueble.active_tenant ? "No se puede desactivar un inmueble con arrendatario activo" : ""}
+                            >
+                                {inmueble.is_active ? (
+                                    <>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                        Desactivar
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        Activar
+                                    </>
+                                )}
+                            </button>
+                            <Link href={`/dashboard/inmuebles/editar/${id}`} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold tracking-wide rounded-xl transition-all shadow-sm flex items-center gap-2 text-sm">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                Editar
+                            </Link>
+                        </div>
                     </div>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Gesti&oacute;n y asignaciones del inmueble.</p>
                 </div>
@@ -334,10 +399,15 @@ export default function DashboardInmuebleDetail() {
                                     <div className="flex w-full h-full items-center justify-center text-slate-400">Sin foto</div>
                                 );
                             })()}
-                            <div className="absolute top-4 right-4">
+                            <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
                                 <span className={`px-3 py-1 text-xs font-semibold rounded-full backdrop-blur-md shadow-sm ${estadoInfo[inmueble.estado]?.colorClass}`}>
                                     {estadoInfo[inmueble.estado]?.label}
                                 </span>
+                                {inmueble.is_active === false && (
+                                    <span className="px-3 py-1 text-xs font-semibold rounded-full bg-rose-600 text-white shadow-sm">
+                                        Desactivado
+                                    </span>
+                                )}
                             </div>
                         </div>
                         <div className="p-6">
@@ -428,7 +498,7 @@ export default function DashboardInmuebleDetail() {
                                     <h3 className="text-sm font-black text-amber-800 dark:text-amber-400 uppercase tracking-wider">Propiedad Ocupada</h3>
                                 </div>
                                 <p className="text-xs text-amber-700 dark:text-amber-300 font-semibold leading-relaxed mb-4">
-                                    Este inmueble actualmente tiene un inquilino activo: <span className="font-bold">{inmueble.active_tenant ? `${inmueble.active_tenant.first_name || ''} ${inmueble.active_tenant.last_name || ''} (${inmueble.active_tenant.email})`.trim() : 'Cargando...'}</span>. Para poder asignar un nuevo arrendatario, primero debe dar por terminado el contrato actual.
+                                    Este inmueble actualmente tiene un inquilino activo: <span className="font-bold">{inmueble.active_tenant ? `${inmueble.active_tenant.first_name || ''} ${inmueble.active_tenant.last_name || ''} (${inmueble.active_tenant.email})`.trim() : 'Cargando...'}</span>. Para poder asignar un nuevo arrendatario o desactivar la propiedad, primero debe dar por terminado el contrato actual.
                                 </p>
                                 {inmueble.active_tenant && (
                                     <button

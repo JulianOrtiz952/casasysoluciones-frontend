@@ -61,17 +61,20 @@ const PERIOD_OPTIONS = [
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
-    DRAFT:       { label: 'Borrador',    color: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',   dot: 'bg-slate-400' },
-    OPEN:        { label: 'Abierto',     color: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', dot: 'bg-amber-500' },
-    ACCEPTED:    { label: 'Aceptado',    color: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',     dot: 'bg-blue-500' },
-    IN_PROGRESS: { label: 'En proceso',  color: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400', dot: 'bg-indigo-500' },
-    REJECTED:    { label: 'Rechazado',   color: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',     dot: 'bg-rose-500' },
-    CLOSED:      { label: 'Cerrado',     color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', dot: 'bg-emerald-500' },
+    DRAFT:          { label: 'Borrador',           color: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',   dot: 'bg-slate-400' },
+    OPEN:           { label: 'Abierto',            color: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', dot: 'bg-amber-500' },
+    ACCEPTED:       { label: 'Aceptado',           color: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',     dot: 'bg-blue-500' },
+    IN_PROGRESS:    { label: 'En proceso',         color: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400', dot: 'bg-indigo-500' },
+    REJECTED:       { label: 'Rechazado',          color: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',     dot: 'bg-rose-500' },
+    CLOSED:         { label: 'Cerrado',            color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', dot: 'bg-emerald-500' },
+    PENDING_ADMIN:  { label: 'Pendiente Admin',    color: 'bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400',   dot: 'bg-purple-500' },
+    PENDING_TENANT: { label: 'Pendiente Inquilino', color: 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-400', dot: 'bg-fuchsia-500' },
 };
 
 const STATUS_SVG_COLORS: Record<string, string> = {
     DRAFT: '#94a3b8', OPEN: '#f59e0b', ACCEPTED: '#3b82f6',
     IN_PROGRESS: '#6366f1', REJECTED: '#f43f5e', CLOSED: '#10b981',
+    PENDING_ADMIN: '#8b5cf6', PENDING_TENANT: '#d946ef',
 };
 
 // ─── Sub-components ──────────────────────────────────────────────────────────

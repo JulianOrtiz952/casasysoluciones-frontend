@@ -382,7 +382,7 @@ export default function InventariosPage() {
                             ) : filteredInventarios.length === 0 ? (
                                 <tr>
                                     <td colSpan={isTenant ? 5 : 6} className="px-8 py-12 text-center text-slate-400 font-medium">
-                                        No hay inventarios registrados
+                                        {isTenant ? "Aún no hay inventario registrado para este inmueble." : "No hay inventarios registrados."}
                                     </td>
                                 </tr>
                             ) : filteredInventarios.map((inv) => (
@@ -422,6 +422,14 @@ export default function InventariosPage() {
                                     </td>
                                     <td className="px-8 py-4 text-right">
                                         <div className="flex justify-end gap-2.5 items-center">
+                                            {!isTenant && (inv.status === 'IN_PROGRESS' || inv.status === 'OBSERVATIONS_PENDING') && (
+                                                <Link 
+                                                    href={`/dashboard/inventarios/nuevo?id=${inv.id}`}
+                                                    className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-sm shadow-rose-600/10 active:scale-95"
+                                                >
+                                                    Editar
+                                                </Link>
+                                            )}
                                             {!isTenant && inv.inventory_type === 'FINAL' && inv.status === 'PENDING_APPROVAL' && (
                                                 <button 
                                                     onClick={() => handleApproveInventory(inv.id)}
@@ -656,7 +664,9 @@ export default function InventariosPage() {
                                                 {detailInventory.spaces.map((space: any, idx: number) => (
                                                     <div key={idx} className="p-5 border border-slate-200/70 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900/50 shadow-sm space-y-3">
                                                         <div className="flex justify-between items-start">
-                                                            <h5 className="text-sm font-bold text-slate-900 dark:text-white uppercase">{space.space_name}</h5>
+                                                            <h5 className="text-sm font-bold text-slate-900 dark:text-white uppercase">
+                                                                {space.space_name} {space.quantity > 1 ? `(Cantidad: ${space.quantity})` : ''}
+                                                            </h5>
                                                             <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
                                                                 space.condition === 'GOOD' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100/50 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' :
                                                                 space.condition === 'REGULAR' ? 'bg-amber-50 text-amber-600 border border-amber-100/50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' :

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 interface Property {
@@ -11,6 +11,13 @@ interface Property {
     city: string;
     type_display: string;
     owner_name?: string;
+    status: string;
+    active_tenant?: {
+        id: number;
+        first_name: string;
+        last_name: string;
+        email: string;
+    } | null;
 }
 
 interface Tenant {
@@ -21,9 +28,12 @@ interface Tenant {
 }
 
 interface Space {
+    id?: number;
     space_name: string;
     condition: 'GOOD' | 'REGULAR' | 'BAD';
     observations: string;
+    quantity: number;
+    photos?: any[];
     items: {
         name: string;
         checked: boolean;
@@ -32,9 +42,14 @@ interface Space {
 
 export default function NuevoInventarioPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const editId = searchParams.get('id');
+    const propertyParam = searchParams.get('property');
+
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [inventoryId, setInventoryId] = useState<number | null>(null);
+    const [isEditMode, setIsEditMode] = useState(false);
 
     // Data for Step 1
     const [properties, setProperties] = useState<Property[]>([]);
@@ -57,15 +72,74 @@ export default function NuevoInventarioPage() {
     ];
 
     const [spaces, setSpaces] = useState<Space[]>([
-        { space_name: 'Sala / Comedor', condition: 'GOOD', observations: '', items: [...defaultItems] },
-        { space_name: 'Cocina', condition: 'GOOD', observations: '', items: [...defaultItems] },
-        { space_name: 'Habitación principal', condition: 'GOOD', observations: '', items: [...defaultItems] },
-        { space_name: 'Baños', condition: 'GOOD', observations: '', items: [...defaultItems] }
+        { space_name: 'Sala / Comedor', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
+        { space_name: 'Cocina', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
+        { space_name: 'Habitación principal', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
+        { space_name: 'Baños', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] }
     ]);
 
     useEffect(() => {
         fetchInitialData();
     }, []);
+
+    useEffect(() => {
+        if (editId) {
+            setIsEditMode(true);
+            setInventoryId(Number(editId));
+            fetchInventoryForEdit(Number(editId));
+        }
+    }, [editId]);
+
+    useEffect(() => {
+        if (properties.length > 0) {
+            if (editId) {
+                // loaded in fetchInventoryForEdit
+            } else if (propertyParam) {
+                const propId = propertyParam;
+                const prop = properties.find(p => p.id === Number(propId));
+                const activeTenantId = prop?.active_tenant ? String(prop.active_tenant.id) : '';
+                setFormData(prev => ({
+                    ...prev,
+                    property_id: propId,
+                    tenant_id: activeTenantId
+                }));
+            }
+        }
+    }, [properties, editId, propertyParam]);
+
+    const fetchInventoryForEdit = async (id: number) => {
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/v1/inventarios/${id}/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setFormData({
+                    property_id: String(data.property.id),
+                    tenant_id: String(data.tenant.id),
+                    delivery_date: data.delivery_date,
+                    observations: data.observations || '',
+                    inventory_type: data.inventory_type
+                });
+                
+                if (data.spaces && data.spaces.length > 0) {
+                    setSpaces(data.spaces.map((s: any) => ({
+                        id: s.id,
+                        space_name: s.space_name,
+                        condition: s.condition,
+                        observations: s.observations || '',
+                        quantity: s.quantity || 1,
+                        photos: s.photos || [],
+                        items: [...defaultItems]
+                    })));
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching inventory for edit:", error);
+        }
+    };
 
     const fetchInitialData = async () => {
         try {
@@ -88,6 +162,16 @@ export default function NuevoInventarioPage() {
         } catch (error) {
             console.error("Error loading initial data:", error);
         }
+    };
+
+    const handlePropertyChange = (propertyId: string) => {
+        const prop = properties.find(p => p.id === Number(propertyId));
+        const activeTenantId = prop?.active_tenant ? String(prop.active_tenant.id) : '';
+        setFormData(prev => ({
+            ...prev,
+            property_id: propertyId,
+            tenant_id: activeTenantId
+        }));
     };
 
     const handleCreateInventory = async () => {
@@ -120,6 +204,39 @@ export default function NuevoInventarioPage() {
         }
     };
 
+    const handleUpdateStep1 = async () => {
+        setLoading(true);
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/v1/inventarios/${inventoryId}/step/1/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    delivery_date: formData.delivery_date,
+                    observations: formData.observations
+                })
+            });
+
+            if (res.ok) {
+                setStep(2);
+            } else {
+                const err = await res.json();
+                alert(err.message || "Error al actualizar los datos generales.");
+            }
+        } catch (error) {
+            console.error("Error updating inventory step 1:", error);
+            alert("Error de conexión.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const onStep1Submit = isEditMode ? handleUpdateStep1 : handleCreateInventory;
+
     const handleSaveSpaces = async () => {
         if (!inventoryId) return;
         setLoading(true);
@@ -137,6 +254,7 @@ export default function NuevoInventarioPage() {
                         space_name: s.space_name,
                         condition: s.condition,
                         observations: s.observations,
+                        quantity: s.quantity || 1,
                         order: idx
                     }))
                 })
@@ -320,22 +438,47 @@ export default function NuevoInventarioPage() {
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Propiedad</label>
                                     <select 
                                         value={formData.property_id}
-                                        onChange={(e) => setFormData({...formData, property_id: e.target.value})}
-                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-rose-500/20 transition-all dark:text-white"
+                                        disabled={isEditMode}
+                                        onChange={(e) => handlePropertyChange(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-rose-500/20 transition-all dark:text-white disabled:opacity-50"
                                     >
-                                        <option value="">Seleccionar propiedad...</option>
-                                        {properties.map(p => <option key={p.id} value={p.id}>{p.owner_name || p.address} ({p.code})</option>)}
+                                        {isEditMode ? (
+                                            (() => {
+                                                const p = properties.find(p => p.id === Number(formData.property_id));
+                                                return p ? <option value={p.id}>{p.owner_name || p.address} ({p.code})</option> : <option value="">Cargando propiedad...</option>;
+                                            })()
+                                        ) : (
+                                            <>
+                                                <option value="">Seleccionar propiedad...</option>
+                                                {properties.filter(p => p.status === 'RENTED' && p.active_tenant).map(p => (
+                                                    <option key={p.id} value={p.id}>{p.owner_name || p.address} ({p.code})</option>
+                                                ))}
+                                            </>
+                                        )}
                                     </select>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Arrendatario</label>
                                     <select 
                                         value={formData.tenant_id}
-                                        onChange={(e) => setFormData({...formData, tenant_id: e.target.value})}
-                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-rose-500/20 transition-all dark:text-white"
+                                        disabled={true}
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-rose-500/20 transition-all dark:text-white disabled:opacity-50 cursor-not-allowed"
                                     >
-                                        <option value="">Seleccionar arrendatario...</option>
-                                        {tenants.map(t => <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>)}
+                                        {formData.tenant_id ? (
+                                            (() => {
+                                                const t = tenants.find(t => t.id === Number(formData.tenant_id));
+                                                if (t) return <option value={t.id}>{t.first_name} {t.last_name}</option>;
+                                                
+                                                const p = properties.find(p => p.id === Number(formData.property_id));
+                                                if (p?.active_tenant && String(p.active_tenant.id) === formData.tenant_id) {
+                                                    return <option value={p.active_tenant.id}>{p.active_tenant.first_name} {p.active_tenant.last_name}</option>;
+                                                }
+                                                
+                                                return <option value="">Cargando arrendatario...</option>;
+                                            })()
+                                        ) : (
+                                            <option value="">Seleccione una propiedad primero...</option>
+                                        )}
                                     </select>
                                 </div>
                             </div>
@@ -344,8 +487,9 @@ export default function NuevoInventarioPage() {
                                 <div className="flex gap-4">
                                     <button 
                                         type="button"
+                                        disabled={isEditMode}
                                         onClick={() => setFormData({...formData, inventory_type: 'INITIAL'})}
-                                        className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold border transition-all ${
+                                        className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold border transition-all disabled:opacity-50 ${
                                             formData.inventory_type === 'INITIAL' 
                                                 ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-600' 
                                                 : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
@@ -355,8 +499,9 @@ export default function NuevoInventarioPage() {
                                     </button>
                                     <button 
                                         type="button"
+                                        disabled={isEditMode}
                                         onClick={() => setFormData({...formData, inventory_type: 'FINAL'})}
-                                        className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold border transition-all ${
+                                        className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold border transition-all disabled:opacity-50 ${
                                             formData.inventory_type === 'FINAL' 
                                                 ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-600' 
                                                 : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
@@ -387,11 +532,11 @@ export default function NuevoInventarioPage() {
                             </div>
                             <div className="pt-4 flex justify-end">
                                 <button 
-                                    onClick={handleCreateInventory}
+                                    onClick={onStep1Submit}
                                     disabled={loading || !formData.property_id || !formData.tenant_id}
                                     className="px-8 py-3 bg-rose-600 hover:bg-rose-500 text-white text-xs font-black rounded-xl transition-all shadow-lg shadow-rose-600/20 uppercase tracking-widest disabled:opacity-50 disabled:grayscale"
                                 >
-                                    {loading ? 'Iniciando...' : 'Siguiente paso'}
+                                    {loading ? 'Procesando...' : 'Siguiente paso'}
                                 </button>
                             </div>
                         </div>
@@ -435,6 +580,22 @@ export default function NuevoInventarioPage() {
                                                     </button>
                                                 ))}
                                             </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cantidad</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={s.quantity || 1}
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value, 10);
+                                                    const quantityVal = isNaN(val) || val < 1 ? 1 : val;
+                                                    const newSpaces = [...spaces];
+                                                    newSpaces[i].quantity = quantityVal;
+                                                    setSpaces(newSpaces);
+                                                }}
+                                                className="w-32 px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-rose-500/20 transition-all dark:text-white"
+                                            />
                                         </div>
                                         <div className="space-y-4">
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Elementos revisados</label>
@@ -633,7 +794,9 @@ export default function NuevoInventarioPage() {
                                     <div className="space-y-3">
                                         {spaces.map((s, i) => (
                                             <div key={i} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{s.space_name}</span>
+                                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                                    {s.space_name} {s.quantity > 1 ? `(x${s.quantity})` : ''}
+                                                </span>
                                                 <div className="flex items-center gap-3">
                                                     {/* @ts-ignore */}
                                                     <span className="text-[10px] font-bold text-slate-400">{s.photos?.length || 0} fotos</span>
