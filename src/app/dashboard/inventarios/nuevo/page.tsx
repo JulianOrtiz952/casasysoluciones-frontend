@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -40,7 +40,7 @@ interface Space {
     }[];
 }
 
-export default function NuevoInventarioPage() {
+function NuevoInventarioForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const editId = searchParams.get('id');
@@ -893,5 +893,17 @@ export default function NuevoInventarioPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function NuevoInventarioPage() {
+    return (
+        <Suspense fallback={
+            <div className="h-64 flex justify-center items-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-800 dark:border-rose-500"></div>
+            </div>
+        }>
+            <NuevoInventarioForm />
+        </Suspense>
     );
 }
