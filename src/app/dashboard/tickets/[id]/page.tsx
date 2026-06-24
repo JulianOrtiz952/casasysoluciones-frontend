@@ -1133,7 +1133,7 @@ export default function TicketDetailPage() {
                             )}
                             {ticket.assigned_technicians_detail && ticket.assigned_technicians_detail.length > 0 && (
                                 <div className="flex flex-col gap-1 pt-1 border-t border-slate-100 dark:border-slate-800">
-                                    <span className="text-slate-400 uppercase tracking-wider text-[10px]">Técnicos asignados</span>
+                                    <span className="text-slate-400 uppercase tracking-wider text-[10px]">Técnico asignado</span>
                                     <div className="flex flex-col gap-1 pl-2">
                                         {ticket.assigned_technicians_detail.map((tech) => (
                                             <span key={tech.id} className="text-slate-700 dark:text-slate-200 font-bold text-xs">
@@ -1550,7 +1550,7 @@ export default function TicketDetailPage() {
                             <form onSubmit={handleAdminUpdate} className="space-y-4 pt-2">
                                 <div>
                                     <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-2">
-                                        Técnicos Asignados
+                                        Técnico Asignado
                                     </label>
                                     <div className="max-h-40 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-xl p-3 bg-slate-50 dark:bg-slate-800 space-y-2">
                                         {technicians.map((t) => {
@@ -1562,9 +1562,9 @@ export default function TicketDetailPage() {
                                                         checked={isChecked}
                                                         onChange={() => {
                                                             if (isChecked) {
-                                                                setSelectedTechnicians(selectedTechnicians.filter(id => id !== t.id));
+                                                                setSelectedTechnicians([]);
                                                             } else {
-                                                                setSelectedTechnicians([...selectedTechnicians, t.id]);
+                                                                setSelectedTechnicians([t.id]);
                                                             }
                                                         }}
                                                         className="rounded text-rose-600 focus:ring-rose-500 w-4 h-4 border-slate-300 dark:border-slate-700"
