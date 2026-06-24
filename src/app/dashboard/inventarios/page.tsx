@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 
 interface Inventario {
@@ -59,6 +60,9 @@ export default function InventariosPage() {
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [detailInventory, setDetailInventory] = useState<any | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -68,15 +72,24 @@ export default function InventariosPage() {
         return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('es-ES');
     };
 
-    const fetchInventarios = async () => {
+    const fetchInventarios = async (page = 1) => {
         try {
+            setLoading(true);
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/api/v1/inventarios/`, {
+            const res = await fetch(`${API_URL}/api/v1/inventarios/?page=${page}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 const data = await res.json();
-                setInventarios(Array.isArray(data) ? data : (data.results || []));
+                if (Array.isArray(data)) {
+                    setInventarios(data);
+                    setTotalPages(1);
+                } else {
+                    setInventarios(data.results || []);
+                    const count = data.count || 0;
+                    setTotalPages(Math.ceil(count / 10) || 1);
+                }
+                setCurrentPage(page);
             }
         } catch (error) {
             console.error("Error fetching inventarios:", error);
@@ -86,6 +99,7 @@ export default function InventariosPage() {
     };
 
     useEffect(() => {
+        setMounted(true);
         const token = localStorage.getItem('token');
         if (token) {
             const decoded = parseJwt(token);
@@ -94,7 +108,7 @@ export default function InventariosPage() {
                 setUserRole(role || '');
             }
         }
-        fetchInventarios();
+        fetchInventarios(1);
     }, []);
 
     const handleDownloadPDF = async (inventoryId: number) => {
@@ -147,7 +161,7 @@ export default function InventariosPage() {
                     title: 'Firma Exitosa',
                     message: 'Inventario firmado digitalmente con éxito.'
                 });
-                fetchInventarios();
+                fetchInventarios(currentPage);
             } else {
                 const errData = await res.json().catch(() => null);
                 setNotification({
@@ -193,7 +207,7 @@ export default function InventariosPage() {
                     title: 'Aprobación Exitosa',
                     message: 'Inventario final aprobado con éxito. La propiedad ha sido liberada y el contrato finalizado.'
                 });
-                fetchInventarios();
+                fetchInventarios(currentPage);
             } else {
                 const errData = await res.json().catch(() => null);
                 setNotification({
@@ -248,7 +262,7 @@ export default function InventariosPage() {
                     title: 'Reporte Enviado',
                     message: 'Observaciones registradas con éxito.'
                 });
-                fetchInventarios();
+                fetchInventarios(currentPage);
             } else {
                 const errData = await res.json().catch(() => null);
                 setNotification({
@@ -489,10 +503,35 @@ export default function InventariosPage() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-900/30">
+                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                            Página {currentPage} de {totalPages}
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => fetchInventarios(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                            >
+                                Anterior
+                            </button>
+                            <button
+                                onClick={() => fetchInventarios(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Observations Modal */}
-            {showObsModal && (
+            {showObsModal && mounted && createPortal(
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -542,11 +581,12 @@ export default function InventariosPage() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Custom Notification Modal (Alert / Confirm) */}
-            {notification && (
+            {notification && mounted && createPortal(
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-8 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200 flex flex-col items-center text-center">
                         <div className={`w-16 h-16 rounded-full flex items-center justify-center border ${
@@ -597,11 +637,12 @@ export default function InventariosPage() {
                             )}
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Custom Detail Inventory Modal */}
-            {showDetailModal && (
+            {showDetailModal && mounted && createPortal(
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full max-h-[85vh] overflow-y-auto border border-slate-200 dark:border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
@@ -734,7 +775,8 @@ export default function InventariosPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

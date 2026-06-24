@@ -153,10 +153,14 @@ export default function InmueblesPage() {
             });
             if (!res1.ok) {
                 const errData = await res1.json().catch(() => null);
-                throw new Error(errData?.message || 'Error al desasociar en el sistema moderno.');
+                throw new Error(errData?.error?.message || errData?.message || 'Error al desasociar en el sistema moderno.');
             }
 
             const data1 = await res1.json().catch(() => ({}));
+            if (data1.error === 'initial_inventory_not_signed') {
+                setCancelError(data1.message);
+                return;
+            }
             if (data1.status === 'request_created') {
                 // For tenants, cancellation only creates a ticket and keeps them associated.
                 // Do not deactivate legacy HistorialAlquiler yet.
@@ -194,7 +198,6 @@ export default function InmueblesPage() {
             setShowCancelModal(false);
             window.location.reload();
         } catch (error: any) {
-            console.error(error);
             setCancelError(error.message || "Error al cancelar el arrendamiento.");
         } finally {
             setCancelingLease(false);
@@ -528,7 +531,11 @@ export default function InmueblesPage() {
                 {showCancelModal && propertyToCancel && mounted && createPortal(
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
                         <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-8 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200 flex flex-col items-center text-center">
-                            <div className="w-16 h-16 bg-rose-50 dark:bg-rose-950/30 rounded-full flex items-center justify-center text-rose-600 border border-rose-100 dark:border-rose-900/40">
+                            <div className={`w-16 h-16 rounded-full flex items-center justify-center border transition-colors ${
+                                cancelError
+                                    ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 border-amber-100 dark:border-amber-900/40"
+                                    : "bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-100 dark:border-rose-900/40"
+                            }`}>
                                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
@@ -541,9 +548,9 @@ export default function InmueblesPage() {
                             </div>
 
                             {cancelError && (
-                                <div className="w-full p-4 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/20 rounded-2xl text-left">
-                                    <p className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wide">Error</p>
-                                    <p className="text-xs text-rose-500 mt-0.5">{cancelError}</p>
+                                <div className="w-full p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/20 rounded-2xl text-left">
+                                    <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Aviso</p>
+                                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5 font-medium">{cancelError}</p>
                                 </div>
                             )}
 

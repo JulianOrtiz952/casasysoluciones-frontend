@@ -10,6 +10,7 @@ interface TicketAttachment {
     id: number;
     image_url: string;
     uploaded_at: string;
+    space_name?: string;
     uploaded_by?: number;
     uploaded_by_detail?: {
         id: number;
@@ -97,6 +98,11 @@ interface Ticket {
         city?: string;
         type?: string;
         status?: string;
+        rooms?: number | null;
+        bathrooms?: number | null;
+        living_rooms?: number | null;
+        kitchens?: number | null;
+        garages?: number | null;
     } | null;
     tenant?: number;
     tenant_detail?: {
@@ -237,6 +243,7 @@ export default function TicketDetailPage() {
     };
 
     const fetchInitialInventory = async (propertyId: number, tenantId: number) => {
+        if (!ticket) return;
         setInventoryLoading(true);
         try {
             const token = getToken();
@@ -329,39 +336,54 @@ export default function TicketDetailPage() {
                     [initialInventory.spaces[0].space_name]: true
                 });
             } else if (!inventoryLoading && !initialInventory) {
-                setFinalConditions([
-                    { space_name: 'Sala / Comedor', condition: 'GOOD', observations: '', items: [
-                        { name: 'Paredes y pintura', checked: true },
-                        { name: 'Pisos y zócalos', checked: true },
-                        { name: 'Puertas y cerraduras', checked: false },
-                        { name: 'Ventanas y persianas', checked: false },
-                        { name: 'Iluminación', checked: true }
-                    ] },
-                    { space_name: 'Cocina', condition: 'GOOD', observations: '', items: [
-                        { name: 'Paredes y pintura', checked: true },
-                        { name: 'Pisos y zócalos', checked: true },
-                        { name: 'Puertas y cerraduras', checked: false },
-                        { name: 'Ventanas y persianas', checked: false },
-                        { name: 'Iluminación', checked: true }
-                    ] },
-                    { space_name: 'Habitación principal', condition: 'GOOD', observations: '', items: [
-                        { name: 'Paredes y pintura', checked: true },
-                        { name: 'Pisos y zócalos', checked: true },
-                        { name: 'Puertas y cerraduras', checked: false },
-                        { name: 'Ventanas y persianas', checked: false },
-                        { name: 'Iluminación', checked: true }
-                    ] },
-                    { space_name: 'Baños', condition: 'GOOD', observations: '', items: [
-                        { name: 'Paredes y pintura', checked: true },
-                        { name: 'Pisos y zócalos', checked: true },
-                        { name: 'Puertas y cerraduras', checked: false },
-                        { name: 'Ventanas y persianas', checked: false },
-                        { name: 'Iluminación', checked: true }
-                    ] }
-                ]);
-                setOpenTechnicianSpaces({
-                    'Sala / Comedor': true
-                });
+                const generated: any[] = [];
+                const defaultItems = [
+                    { name: 'Paredes y pintura', checked: true },
+                    { name: 'Pisos y zócalos', checked: true },
+                    { name: 'Puertas y cerraduras', checked: false },
+                    { name: 'Ventanas y persianas', checked: false },
+                    { name: 'Iluminación', checked: true }
+                ];
+                
+                const addSpaces = (name: string, count: number | null | undefined) => {
+                    const num = Number(count);
+                    if (!isNaN(num) && num > 0) {
+                        for (let i = 1; i <= num; i++) {
+                            generated.push({
+                                space_name: `${name} ${i}`,
+                                condition: 'GOOD',
+                                observations: '',
+                                items: defaultItems.map(item => ({ ...item }))
+                            });
+                        }
+                    }
+                };
+
+                const prop = ticket.property;
+                if (prop) {
+                    addSpaces('Habitación', prop.rooms);
+                    addSpaces('Baño', prop.bathrooms);
+                    addSpaces('Sala / Comedor', prop.living_rooms);
+                    addSpaces('Cocina', prop.kitchens);
+                    addSpaces('Garaje', prop.garages);
+                }
+
+                if (generated.length === 0) {
+                    setFinalConditions([
+                        { space_name: 'Sala / Comedor 1', condition: 'GOOD', observations: '', items: defaultItems.map(item => ({ ...item })) },
+                        { space_name: 'Cocina 1', condition: 'GOOD', observations: '', items: defaultItems.map(item => ({ ...item })) },
+                        { space_name: 'Habitación 1', condition: 'GOOD', observations: '', items: defaultItems.map(item => ({ ...item })) },
+                        { space_name: 'Baño 1', condition: 'GOOD', observations: '', items: defaultItems.map(item => ({ ...item })) }
+                    ]);
+                    setOpenTechnicianSpaces({
+                        'Sala / Comedor 1': true
+                    });
+                } else {
+                    setFinalConditions(generated);
+                    setOpenTechnicianSpaces({
+                        [generated[0].space_name]: true
+                    });
+                }
             }
         }
     }, [initialInventory, inventoryLoading, ticket]);
@@ -596,7 +618,7 @@ export default function TicketDetailPage() {
         }
     };
 
-    const handleTechnicianUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleTechnicianUpload = async (e: React.ChangeEvent<HTMLInputElement>, spaceName?: string) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -605,6 +627,9 @@ export default function TicketDetailPage() {
             const token = getToken();
             const formData = new FormData();
             formData.append('image', file);
+            if (spaceName) {
+                formData.append('space_name', spaceName);
+            }
             const res = await fetch(`${API_URL}/api/v1/tickets/${params.id}/technician-attachments/`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -624,6 +649,38 @@ export default function TicketDetailPage() {
         } finally {
             setUploadingEvidence(false);
             e.target.value = '';
+        }
+    };
+
+    const handleDeleteTechnicianAttachment = async (attachmentId: number) => {
+        const confirmed = await showConfirm('¿Estás seguro de que deseas eliminar esta foto de evidencia?', 'Eliminar Foto');
+        if (!confirmed) return;
+
+        setActionLoading(true);
+        try {
+            const token = getToken();
+            const res = await fetch(`${API_URL}/api/v1/tickets/${params.id}/delete-attachment/`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ attachment_id: attachmentId })
+            });
+
+            if (res.ok) {
+                await fetchTicketDetails();
+                fetchTicketHistory();
+                await showAlert('Foto eliminada exitosamente.', 'success');
+            } else {
+                const errData = await res.json().catch(() => null);
+                await showAlert(errData?.message || errData?.error || 'Error al eliminar la foto.', 'error');
+            }
+        } catch (err) {
+            console.error('Error deleting photo:', err);
+            await showAlert('Error de conexión.', 'error');
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -819,10 +876,15 @@ export default function TicketDetailPage() {
     const hasUnratedClosureSpaces = ticket.damage_type === 'CLOSURE' && 
         (finalConditions.length === 0 || finalConditions.some(c => !c.condition));
 
+    // Check if any space is missing photos for a closure ticket
+    const missingPhotosForClosureSpaces = ticket.damage_type === 'CLOSURE' && 
+        finalConditions.some(c => !ticket.attachments.some(a => a.space_name === c.space_name));
+
     const canComplete = isTechnician && 
-        techAttachments.length > 0 && 
-        (ticket.status === 'IN_PROGRESS' || ticket.status === 'ACCEPTED' || ticket.status === 'REJECTED' || ticket.status === 'OPEN') && 
-        !hasUnratedClosureSpaces;
+        (ticket.damage_type === 'CLOSURE' 
+            ? (!hasUnratedClosureSpaces && !missingPhotosForClosureSpaces) 
+            : techAttachments.length > 0) && 
+        (ticket.status === 'IN_PROGRESS' || ticket.status === 'ACCEPTED' || ticket.status === 'REJECTED' || ticket.status === 'OPEN');
 
     const getFullImageUrl = (path: string) => {
         if (!path) return '';
@@ -1200,6 +1262,17 @@ export default function TicketDetailPage() {
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center gap-2">
+                                                                {isClosureTicket && (
+                                                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                                                        ticket.attachments.some((a: any) => a.space_name === cond.space_name)
+                                                                            ? 'bg-teal-50 text-teal-600 border border-teal-100 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-900/40'
+                                                                            : 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/40 animate-pulse'
+                                                                    }`}>
+                                                                        {ticket.attachments.some((a: any) => a.space_name === cond.space_name)
+                                                                            ? 'Con Foto'
+                                                                            : 'Sin Foto'}
+                                                                    </span>
+                                                                )}
                                                                 <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-tight ${
                                                                     cond.condition === 'GOOD' ? 'bg-emerald-50 text-emerald-600' :
                                                                     cond.condition === 'REGULAR' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
@@ -1277,6 +1350,58 @@ export default function TicketDetailPage() {
                                                                         className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-xs font-semibold focus:ring-1 focus:ring-teal-500/50 transition-all dark:text-white resize-none"
                                                                     />
                                                                 </div>
+
+                                                                {/* Space Specific Photos Upload */}
+                                                                {isClosureTicket && (
+                                                                    <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Evidencias del ambiente</label>
+                                                                            <label className={`px-3 py-1 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/30 dark:hover:bg-teal-900/40 text-teal-600 dark:text-teal-400 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${uploadingEvidence ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                                                                </svg>
+                                                                                Subir Foto
+                                                                                <input
+                                                                                    type="file"
+                                                                                    accept="image/*"
+                                                                                    onChange={(e) => handleTechnicianUpload(e, cond.space_name)}
+                                                                                    className="hidden"
+                                                                                    disabled={uploadingEvidence}
+                                                                                />
+                                                                            </label>
+                                                                        </div>
+
+                                                                        {ticket?.attachments.filter((a: any) => a.space_name === cond.space_name).length > 0 ? (
+                                                                            <div className="grid grid-cols-3 gap-2">
+                                                                                {ticket.attachments.filter((a: any) => a.space_name === cond.space_name).map((att: any) => (
+                                                                                    <div key={att.id} className="aspect-square bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden relative group border border-slate-200 dark:border-slate-800">
+                                                                                        <img src={getFullImageUrl(att.image_url)} alt="evidencia" className="w-full h-full object-cover" />
+                                                                                        {isTechnician && (ticket.status === 'IN_PROGRESS' || ticket.status === 'ACCEPTED' || ticket.status === 'REJECTED' || ticket.status === 'OPEN') && (
+                                                                                            <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                                                <button
+                                                                                                    type="button"
+                                                                                                    onClick={() => handleDeleteTechnicianAttachment(att.id)}
+                                                                                                    className="p-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg hover:scale-110 transition-transform"
+                                                                                                >
+                                                                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                                                    </svg>
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/20 p-2.5 rounded-xl border border-amber-100/60 dark:border-amber-900/30 flex items-center gap-1.5">
+                                                                                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                                                                </svg>
+                                                                                Falta imagen de evidencia para este ambiente.
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
@@ -1298,15 +1423,18 @@ export default function TicketDetailPage() {
                                     </svg>
                                 </div>
                                 <h3 className="text-xs font-black uppercase tracking-widest">
-                                    Evidencias de Reparación / Cierre
+                                    {isClosureTicket ? 'Evidencias de Entrega por Ambiente' : 'Evidencias de Reparación'}
                                 </h3>
                             </div>
 
                             <p className="text-xs text-slate-550 dark:text-slate-400 font-medium leading-relaxed">
-                                Sube fotos del trabajo realizado como evidencia de la reparación o estado de entrega. Debes subir al menos una imagen antes de poder marcar el ticket como completado.
+                                {isClosureTicket 
+                                    ? 'Por favor, asegúrate de adjuntar la evidencia fotográfica de cada espacio/ambiente en su respectiva sección arriba.'
+                                    : 'Sube fotos del trabajo realizado como evidencia de la reparación. Debes subir al menos una imagen antes de poder marcar el ticket como completado.'
+                                }
                             </p>
 
-                            {techAttachments.length > 0 && (
+                            {!isClosureTicket && techAttachments.length > 0 && (
                                 <div className="flex items-center gap-2 text-[10px] font-black text-teal-600 dark:text-teal-400 uppercase tracking-widest">
                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path>
@@ -1315,19 +1443,21 @@ export default function TicketDetailPage() {
                                 </div>
                             )}
 
-                            <label className={`w-full py-2.5 bg-white dark:bg-slate-900 border-2 border-dashed border-teal-300 dark:border-teal-800 hover:border-teal-500 text-teal-600 dark:text-teal-400 text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer ${uploadingEvidence ? 'opacity-50 pointer-events-none' : ''}`}>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                                </svg>
-                                {uploadingEvidence ? 'Subiendo...' : 'Subir Evidencia'}
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleTechnicianUpload}
-                                    className="hidden"
-                                    disabled={uploadingEvidence}
-                                />
-                            </label>
+                            {!isClosureTicket && (
+                                <label className={`w-full py-2.5 bg-white dark:bg-slate-900 border-2 border-dashed border-teal-300 dark:border-teal-800 hover:border-teal-500 text-teal-600 dark:text-teal-400 text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer ${uploadingEvidence ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                    </svg>
+                                    {uploadingEvidence ? 'Subiendo...' : 'Subir Evidencia'}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleTechnicianUpload(e)}
+                                        className="hidden"
+                                        disabled={uploadingEvidence}
+                                    />
+                                </label>
+                            )}
 
                             <button
                                 type="button"
@@ -1341,14 +1471,19 @@ export default function TicketDetailPage() {
                                 {actionLoading ? 'Procesando...' : 'Marcar como Completado'}
                             </button>
 
-                            {!canComplete && techAttachments.length === 0 && (
+                            {!canComplete && !isClosureTicket && techAttachments.length === 0 && (
                                 <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold text-center">
                                     ⚠ Debes subir al menos una evidencia para completar
                                 </p>
                             )}
-                            {!canComplete && hasUnratedClosureSpaces && (
+                            {!canComplete && isClosureTicket && hasUnratedClosureSpaces && (
                                 <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold text-center">
                                     ⚠ Debes calificar todos los espacios del inventario antes de completar
+                                </p>
+                            )}
+                            {!canComplete && isClosureTicket && !hasUnratedClosureSpaces && missingPhotosForClosureSpaces && (
+                                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold text-center">
+                                    ⚠ Debes subir al menos una evidencia fotográfica en cada uno de los ambientes arriba para poder completar
                                 </p>
                             )}
                         </div>

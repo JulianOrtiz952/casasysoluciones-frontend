@@ -18,6 +18,11 @@ interface Property {
         last_name: string;
         email: string;
     } | null;
+    rooms?: number | null;
+    bathrooms?: number | null;
+    living_rooms?: number | null;
+    kitchens?: number | null;
+    garages?: number | null;
 }
 
 interface Tenant {
@@ -72,11 +77,47 @@ function NuevoInventarioForm() {
     ];
 
     const [spaces, setSpaces] = useState<Space[]>([
-        { space_name: 'Sala / Comedor', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
-        { space_name: 'Cocina', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
-        { space_name: 'Habitación principal', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
-        { space_name: 'Baños', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] }
+        { space_name: 'Sala / Comedor 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
+        { space_name: 'Cocina 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
+        { space_name: 'Habitación 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
+        { space_name: 'Baño 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] }
     ]);
+
+    const generateSpacesFromProperty = (property: Property): Space[] => {
+        const generatedSpaces: Space[] = [];
+
+        const addSpaces = (name: string, count: number | null | undefined) => {
+            const num = Number(count);
+            if (!isNaN(num) && num > 0) {
+                for (let i = 1; i <= num; i++) {
+                    generatedSpaces.push({
+                        space_name: `${name} ${i}`,
+                        condition: 'GOOD',
+                        observations: '',
+                        quantity: 1,
+                        items: [...defaultItems]
+                    });
+                }
+            }
+        };
+
+        addSpaces('Habitación', property.rooms);
+        addSpaces('Baño', property.bathrooms);
+        addSpaces('Sala / Comedor', property.living_rooms);
+        addSpaces('Cocina', property.kitchens);
+        addSpaces('Garaje', property.garages);
+
+        if (generatedSpaces.length === 0) {
+            return [
+                { space_name: 'Sala / Comedor 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
+                { space_name: 'Cocina 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
+                { space_name: 'Habitación 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
+                { space_name: 'Baño 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] }
+            ];
+        }
+
+        return generatedSpaces;
+    };
 
     useEffect(() => {
         fetchInitialData();
@@ -89,6 +130,16 @@ function NuevoInventarioForm() {
             fetchInventoryForEdit(Number(editId));
         }
     }, [editId]);
+
+    useEffect(() => {
+        const hasSavedSpaces = spaces.some(s => s.id !== undefined);
+        if (properties.length > 0 && formData.property_id && !hasSavedSpaces) {
+            const prop = properties.find(p => p.id === Number(formData.property_id));
+            if (prop) {
+                setSpaces(generateSpacesFromProperty(prop));
+            }
+        }
+    }, [properties, formData.property_id]);
 
     useEffect(() => {
         if (properties.length > 0) {
@@ -582,22 +633,7 @@ function NuevoInventarioForm() {
                                                 ))}
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cantidad</label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={s.quantity || 1}
-                                                onChange={(e) => {
-                                                    const val = parseInt(e.target.value, 10);
-                                                    const quantityVal = isNaN(val) || val < 1 ? 1 : val;
-                                                    const newSpaces = [...spaces];
-                                                    newSpaces[i].quantity = quantityVal;
-                                                    setSpaces(newSpaces);
-                                                }}
-                                                className="w-32 px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-rose-500/20 transition-all dark:text-white"
-                                            />
-                                        </div>
+
                                         <div className="space-y-4">
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Elementos revisados</label>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
