@@ -422,7 +422,10 @@ export default function InventariosPage() {
                                     </td>
                                     <td className="px-8 py-4 text-right">
                                         <div className="flex justify-end gap-2.5 items-center">
-                                            {!isTenant && (inv.status === 'IN_PROGRESS' || inv.status === 'OBSERVATIONS_PENDING') && (
+                                            {!isTenant && (
+                                                (inv.inventory_type === 'INITIAL' && ['IN_PROGRESS', 'PENDING_SIGNATURE', 'OBSERVATIONS_PENDING'].includes(inv.status)) ||
+                                                (inv.inventory_type === 'FINAL' && inv.status === 'IN_PROGRESS')
+                                            ) && (
                                                 <Link 
                                                     href={`/dashboard/inventarios/nuevo?id=${inv.id}`}
                                                     className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-sm shadow-rose-600/10 active:scale-95"

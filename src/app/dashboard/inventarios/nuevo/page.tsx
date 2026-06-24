@@ -251,6 +251,7 @@ function NuevoInventarioForm() {
                 },
                 body: JSON.stringify({ 
                     spaces: spaces.map((s, idx) => ({
+                        id: s.id || null,
                         space_name: s.space_name,
                         condition: s.condition,
                         observations: s.observations,

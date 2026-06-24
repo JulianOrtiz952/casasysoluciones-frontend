@@ -241,7 +241,7 @@ export default function TicketDetailPage() {
         try {
             const token = getToken();
             const res = await fetch(
-                `${API_URL}/api/v1/inventarios/?property_id=${propertyId}&tenant_id=${tenantId}&type=INITIAL`,
+                `${API_URL}/api/v1/inventarios/?property_id=${propertyId}&tenant_id=${tenantId}&type=INITIAL&created_before=${ticket.created_at}`,
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
             if (res.ok) {
@@ -1548,41 +1548,6 @@ export default function TicketDetailPage() {
                             </div>
                             
                             <form onSubmit={handleAdminUpdate} className="space-y-4 pt-2">
-                                <div>
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-1">
-                                        Estado del Ticket *
-                                    </label>
-                                    <select
-                                        value={adminStatus}
-                                        onChange={(e) => setAdminStatus(e.target.value)}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-semibold outline-none focus:border-rose-500 transition-all text-slate-800 dark:text-white"
-                                    >
-                                        <option value="DRAFT">Borrador</option>
-                                        <option value="OPEN">Abierto</option>
-                                        <option value="ACCEPTED">Aceptado</option>
-                                        <option value="IN_PROGRESS">En proceso</option>
-                                        <option value="PENDING_ADMIN">Pendiente de Admin</option>
-                                        <option value="PENDING_TENANT">Pendiente de Inquilino</option>
-                                        <option value="REJECTED">Rechazado</option>
-                                        <option value="CLOSED">Cerrado</option>
-                                    </select>
-                                </div>
-
-                                {adminStatus === 'REJECTED' && (
-                                    <div className="mt-3">
-                                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-1">
-                                            Motivo del Rechazo *
-                                        </label>
-                                        <textarea
-                                            value={adminRejectionReason}
-                                            onChange={(e) => setAdminRejectionReason(e.target.value)}
-                                            placeholder="Detalla por qué rechazas este ticket..."
-                                            rows={3}
-                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-semibold outline-none focus:border-rose-500 transition-all text-slate-800 dark:text-white resize-none"
-                                        />
-                                    </div>
-                                )}
-
                                 <div>
                                     <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-2">
                                         Técnicos Asignados

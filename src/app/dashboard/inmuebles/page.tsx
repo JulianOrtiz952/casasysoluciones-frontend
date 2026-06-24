@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 
 interface Inmueble {
@@ -67,6 +68,7 @@ export default function InmueblesPage() {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [propertyToCancel, setPropertyToCancel] = useState<Inmueble | null>(null);
     const [cancelError, setCancelError] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
 
     const getImageUrl = (url: string | null | undefined) => {
         if (!url) return '';
@@ -76,6 +78,7 @@ export default function InmueblesPage() {
     };
 
     useEffect(() => {
+        setMounted(true);
         const token = localStorage.getItem('token');
         if (token) {
             const decoded = parseJwt(token);
@@ -252,7 +255,8 @@ export default function InmueblesPage() {
 
         const prop = inmuebles[selectedPropIndex] || inmuebles[0];
         return (
-            <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-16">
+            <>
+                <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-16">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                     <div>
@@ -503,8 +507,8 @@ export default function InmueblesPage() {
                                                 </svg>
                                             </div>
                                             <div className="text-left">
-                                                <p className="text-xs font-black uppercase tracking-wider">Cancelar Arrendamiento</p>
-                                                <p className="text-[9px] text-rose-500/70 font-semibold mt-0.5">{cancelingLease ? 'Cancelando...' : 'Finalizar contrato y liberar propiedad'}</p>
+                                                <p className="text-xs font-black uppercase tracking-wider">Solicitar Inventario Final</p>
+                                                <p className="text-[9px] text-rose-500/70 font-semibold mt-0.5">{cancelingLease ? 'Solicitando...' : 'Solicitar revisión y entrega del inmueble'}</p>
                                             </div>
                                         </div>
                                         <svg className="w-4 h-4 text-rose-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"></path></svg>
@@ -518,9 +522,11 @@ export default function InmueblesPage() {
 
                 </div>
 
-                {/* Modal de confirmación personalizado para cancelación */}
-                {showCancelModal && propertyToCancel && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            </div>
+
+            {/* Modal de confirmación personalizado para cancelación */}
+                {showCancelModal && propertyToCancel && mounted && createPortal(
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
                         <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-8 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200 flex flex-col items-center text-center">
                             <div className="w-16 h-16 bg-rose-50 dark:bg-rose-950/30 rounded-full flex items-center justify-center text-rose-600 border border-rose-100 dark:border-rose-900/40">
                                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -528,9 +534,9 @@ export default function InmueblesPage() {
                                 </svg>
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-xl font-black text-slate-950 dark:text-white uppercase tracking-tight">Cancelar Arrendamiento</h3>
+                                <h3 className="text-xl font-black text-slate-950 dark:text-white uppercase tracking-tight">Solicitar Inventario Final</h3>
                                 <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
-                                    ¿Está seguro de que desea cancelar su arrendamiento para la propiedad <span className="font-bold text-slate-800 dark:text-slate-200">{propertyToCancel.code}</span> ({propertyToCancel.address.split(',')[0]})? Esta acción no se puede deshacer.
+                                    ¿Está seguro de que desea solicitar el inventario final para la propiedad <span className="font-bold text-slate-800 dark:text-slate-200">{propertyToCancel.code}</span> ({propertyToCancel.address.split(',')[0]})? Se creará una solicitud de entrega y revisión final.
                                 </p>
                             </div>
 
@@ -565,17 +571,18 @@ export default function InmueblesPage() {
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                             </svg>
-                                            Cancelando...
+                                            Solicitando...
                                         </>
                                     ) : (
-                                        'Sí, cancelar'
+                                        'Sí, solicitar'
                                     )}
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )}
-            </div>
+            </>
         );
     }
 
