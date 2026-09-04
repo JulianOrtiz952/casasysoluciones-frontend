@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./theme-provider";
 import { AlertProvider } from "./alert-provider";
+import { ConsoleSuppressor } from "./ConsoleSuppressor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +33,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <ConsoleSuppressor />
         <ThemeProvider>
           <AlertProvider>
             {children}
@@ -41,4 +43,5 @@ export default function RootLayout({
     </html>
   );
 }
+
 
