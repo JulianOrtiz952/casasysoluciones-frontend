@@ -321,12 +321,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                 </header>
 
-                {/* Page content with transition */}
+                {/* Page content */}
                 <main className="flex-1 overflow-auto p-4 sm:p-6 md:p-8 relative bg-slate-50 dark:bg-slate-950">
-                    <div
-                        key={pathname}
-                        className="animate-in fade-in slide-in-from-bottom-3 duration-300 fill-mode-both"
-                    >
+                    <div key={pathname}>
                         {children}
                     </div>
                 </main>

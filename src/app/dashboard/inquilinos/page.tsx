@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAlert } from '@/app/alert-provider';
+import { Modal } from '@/app/components/Modal';
 
 
 interface Usuario {
@@ -429,170 +430,160 @@ export default function InquilinosPage() {
             </div>
 
             {/* Edit Modal */}
-            {editingUsuario && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xl p-8 overflow-y-auto max-h-[90vh] animate-in zoom-in-95 duration-200">
-                        <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h3 className="text-xl font-black text-slate-950 dark:text-white">Editar Usuario</h3>
-                                <p className="text-slate-400 text-xs mt-1">Modificando a: {editingUsuario.email}</p>
+            <Modal
+                isOpen={!!editingUsuario}
+                onClose={() => setEditingUsuario(null)}
+                title="Editar Usuario"
+                subtitle={editingUsuario ? `Modificando a: ${editingUsuario.email}` : undefined}
+            >
+                {editingUsuario && (
+                    <form onSubmit={handleEditSubmit} className="space-y-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Nombre</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editForm.first_name}
+                                    onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
+                                />
                             </div>
-                            <button
-                                onClick={() => setEditingUsuario(null)}
-                                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Apellido</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editForm.last_name}
+                                    onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
+                                />
+                            </div>
                         </div>
 
-                        <form onSubmit={handleEditSubmit} className="space-y-5">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Nombre</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={editForm.first_name}
-                                        onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
-                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Apellido</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={editForm.last_name}
-                                        onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
-                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
-                                    />
-                                </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Teléfono</label>
+                                <input
+                                    type="text"
+                                    value={editForm.phone}
+                                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
+                                />
                             </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Teléfono</label>
-                                    <input
-                                        type="text"
-                                        value={editForm.phone}
-                                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Tipo de Documento</label>
-                                    <select
-                                        value={editForm.document_type}
-                                        onChange={(e) => setEditForm({ ...editForm, document_type: e.target.value })}
-                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
-                                    >
-                                        <option value="CC">Cédula de ciudadanía</option>
-                                        <option value="CE">Cédula de extranjería</option>
-                                        <option value="PASSPORT">Pasaporte</option>
-                                        <option value="NIT">NIT</option>
-                                    </select>
-                                </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Tipo de Documento</label>
+                                <select
+                                    value={editForm.document_type}
+                                    onChange={(e) => setEditForm({ ...editForm, document_type: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
+                                >
+                                    <option value="CC">Cédula de ciudadanía</option>
+                                    <option value="CE">Cédula de extranjería</option>
+                                    <option value="PASSPORT">Pasaporte</option>
+                                    <option value="NIT">NIT</option>
+                                </select>
                             </div>
+                        </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Nº de Identificación</label>
-                                    <input
-                                        type="text"
-                                        value={editForm.document_number}
-                                        onChange={(e) => setEditForm({ ...editForm, document_number: e.target.value })}
-                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Rol en el Sistema</label>
-                                    <select
-                                        disabled={isCurrentUser(editingUsuario.email)}
-                                        value={editForm.role}
-                                        onChange={(e) => setEditForm({ ...editForm, role: e.target.value as any })}
-                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >
-                                        <option value="TENANT">Arrendatario</option>
-                                        <option value="ASSISTANT">Asistente Administrativo</option>
-                                        <option value="TECHNICIAN">Técnico</option>
-                                        <option value="ADMIN">Administrador</option>
-                                    </select>
-                                </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Nº de Identificación</label>
+                                <input
+                                    type="text"
+                                    value={editForm.document_number}
+                                    onChange={(e) => setEditForm({ ...editForm, document_number: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
+                                />
                             </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Estado de la cuenta</label>
-                                    <select
-                                        disabled={isCurrentUser(editingUsuario.email)}
-                                        value={editForm.is_active ? 'true' : 'false'}
-                                        onChange={(e) => setEditForm({ ...editForm, is_active: e.target.value === 'true' })}
-                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >
-                                        <option value="true">Activo</option>
-                                        <option value="false">Inactivo</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Nueva Contraseña (Opcional)</label>
-                                    <input
-                                        type="password"
-                                        placeholder="Dejar vacío para no cambiar"
-                                        value={editForm.password}
-                                        onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
-                                    />
-                                </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Rol en el Sistema</label>
+                                <select
+                                    disabled={isCurrentUser(editingUsuario.email)}
+                                    value={editForm.role}
+                                    onChange={(e) => setEditForm({ ...editForm, role: e.target.value as any })}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    <option value="TENANT">Arrendatario</option>
+                                    <option value="ASSISTANT">Asistente Administrativo</option>
+                                    <option value="TECHNICIAN">Técnico</option>
+                                    <option value="ADMIN">Administrador</option>
+                                </select>
                             </div>
+                        </div>
 
-                            {editForm.role === 'TENANT' && (
-                                <div className="p-5 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 rounded-2xl space-y-2">
-                                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-widest leading-none">Propiedad Asociada</h4>
-                                    {editingUsuario.active_properties && editingUsuario.active_properties.length > 0 ? (
-                                        <div className="flex justify-between items-center pt-1">
-                                            <div>
-                                                <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                                                    {editingUsuario.active_properties[0].code}
-                                                </p>
-                                                <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 leading-normal">
-                                                    {editingUsuario.active_properties[0].address}
-                                                </p>
-                                            </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Estado de la cuenta</label>
+                                <select
+                                    disabled={isCurrentUser(editingUsuario.email)}
+                                    value={editForm.is_active ? 'true' : 'false'}
+                                    onChange={(e) => setEditForm({ ...editForm, is_active: e.target.value === 'true' })}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    <option value="true">Activo</option>
+                                    <option value="false">Inactivo</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-400 uppercase">Nueva Contraseña (Opcional)</label>
+                                <input
+                                    type="password"
+                                    placeholder="Dejar vacío para no cambiar"
+                                    value={editForm.password}
+                                    onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 dark:text-white transition text-xs"
+                                />
+                            </div>
+                        </div>
+
+                        {editForm.role === 'TENANT' && (
+                            <div className="p-5 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 rounded-2xl space-y-2">
+                                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-widest leading-none">Propiedad Asociada</h4>
+                                {editingUsuario.active_properties && editingUsuario.active_properties.length > 0 ? (
+                                    <div className="flex justify-between items-center pt-1">
+                                        <div>
+                                            <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                                                {editingUsuario.active_properties[0].code}
+                                            </p>
+                                            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 leading-normal">
+                                                {editingUsuario.active_properties[0].address}
+                                            </p>
                                         </div>
-                                    ) : (
-                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 pt-1">
-                                            Sin propiedad asociada actualmente.
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                            {isCurrentUser(editingUsuario.email) && (
-                                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                                    * No puedes cambiar tu propio rol ni desactivar tu propia cuenta.
-                                </p>
-                            )}
-
-                            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
-                                <button
-                                    type="button"
-                                    onClick={() => setEditingUsuario(null)}
-                                    className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 disabled:bg-rose-400 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-rose-600/20"
-                                >
-                                    {submitting ? 'Guardando...' : 'Guardar Cambios'}
-                                </button>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 pt-1">
+                                        Sin propiedad asociada actualmente.
+                                    </p>
+                                )}
                             </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                        )}
+
+                        {isCurrentUser(editingUsuario.email) && (
+                            <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                * No puedes cambiar tu propio rol ni desactivar tu propia cuenta.
+                            </p>
+                        )}
+
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
+                            <button
+                                type="button"
+                                onClick={() => setEditingUsuario(null)}
+                                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={submitting}
+                                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 disabled:bg-rose-400 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-rose-600/20"
+                            >
+                                {submitting ? 'Guardando...' : 'Guardar Cambios'}
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </Modal>
         </div>
     );
 }

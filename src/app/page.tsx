@@ -147,7 +147,7 @@ export default function Home() {
           setInmuebles(ofertas);
         }
       } catch (error) {
-        console.error('Error cargando inmuebles', error);
+        // Silenced for production
       } finally {
         setLoading(false);
       }
@@ -161,16 +161,16 @@ export default function Home() {
       <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b border-slate-200/80 dark:border-slate-800 transition-colors duration-300 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <img src="/logo.jpeg" alt="CasasySoluciones Logo" className="h-11 w-auto rounded-md bg-white p-1 shadow-sm border border-slate-100" />
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+              <img src="/logo.jpeg" alt="CasasySoluciones Logo" className="h-9 sm:h-11 w-auto rounded-md bg-white p-1 shadow-sm border border-slate-100" />
+              <h1 className="text-base sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
                 Casas<span className="text-rose-600">y</span>Soluciones
               </h1>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <Link
                 href="/login"
-                className="text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 px-6 py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
+                className="text-xs sm:text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 whitespace-nowrap"
               >
                 Iniciar Sesión
               </Link>
