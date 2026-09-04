@@ -73,11 +73,11 @@ export default function PublicInmuebleDetail() {
 
     const images = (() => {
         const galleryImages = inmueble?.images || [];
-        if (galleryImages.length === 0) {
-            return inmueble?.cover_image ? [inmueble.cover_image] : [];
+        if (galleryImages.length > 0) {
+            const sorted = [...galleryImages].sort((a, b) => (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0));
+            return sorted.map(i => i.image);
         }
-        const sorted = [...galleryImages].sort((a, b) => (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0));
-        return sorted.map(i => i.image);
+        return inmueble?.cover_image ? [inmueble.cover_image] : [];
     })();
 
     const nextImage = () => {
@@ -275,13 +275,27 @@ export default function PublicInmuebleDetail() {
                             <div className="mt-12">
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Galería de Imágenes</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    {inmueble.images.map((img) => (
-                                        <div key={img.id} className="relative rounded-2xl overflow-hidden h-48 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition">
-                                            <a href={img.image} target="_blank" rel="noopener noreferrer">
-                                                <img src={img.image} alt="Galería" className="w-full h-full object-cover hover:scale-105 transition duration-500" />
-                                            </a>
-                                        </div>
-                                    ))}
+                                    {inmueble.images.map((img) => {
+                                        const foundIdx = images.indexOf(img.image);
+                                        const isSelected = images[currentImageIdx] === img.image;
+                                        return (
+                                            <div
+                                                key={img.id}
+                                                onClick={() => {
+                                                    if (foundIdx !== -1) setCurrentImageIdx(foundIdx);
+                                                    window.scrollTo({ top: 100, behavior: 'smooth' });
+                                                }}
+                                                className={`relative rounded-2xl overflow-hidden h-48 border shadow-sm hover:shadow-md transition cursor-pointer group/item ${isSelected ? 'border-rose-500 ring-2 ring-rose-500' : 'border-slate-200 dark:border-slate-800'}`}
+                                            >
+                                                <img src={img.image} alt="Galería" className="w-full h-full object-cover group-hover/item:scale-105 transition duration-500" />
+                                                {img.is_cover && (
+                                                    <span className="absolute bottom-2 left-2 bg-emerald-500 text-white text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md shadow-sm">
+                                                        Portada
+                                                    </span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}

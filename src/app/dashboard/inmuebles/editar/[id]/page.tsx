@@ -35,8 +35,27 @@ export default function EditarInmueble() {
     const [imagenes, setImagenes] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
     const [portadaIndex, setPortadaIndex] = useState<number>(0);
-    // Imágenes previas de la base de datos que se renderizan si no se reemplazan
+    // Imágenes previas de la base de datos
     const [remoteImages, setRemoteImages] = useState<Imagen[]>([]);
+    const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
+    const [setCoverImageId, setSetCoverImageId] = useState<number | null>(null);
+
+    const handleRemoveRemoteImage = (imageId: number) => {
+        setRemoteImages(prev => prev.filter(img => img.id !== imageId));
+        if (imageId > 0) {
+            setDeletedImageIds(prev => [...prev, imageId]);
+        }
+    };
+
+    const handleSetRemoteCover = (imageId: number) => {
+        setRemoteImages(prev => prev.map(img => ({
+            ...img,
+            es_portada: img.id === imageId
+        })));
+        if (imageId > 0) {
+            setSetCoverImageId(imageId);
+        }
+    };
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,31 +87,26 @@ export default function EditarInmueble() {
                 if (resInm.ok) {
                     const data = await resInm.json();
 
-                    const rawValue = String(data.price || '').replace(/[^0-9]/g, '');
-                    let formattedPrecio = rawValue;
-                    if (rawValue.length > 6) {
-                        const millions = rawValue.slice(0, -6).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                        const thousands = rawValue.slice(-6, -3);
-                        const hundreds = rawValue.slice(-3);
-                        formattedPrecio = `${millions}'${thousands},${hundreds}`;
-                    } else if (rawValue.length > 3) {
-                        const thousands = rawValue.slice(0, -3);
-                        const hundreds = rawValue.slice(-3);
-                        formattedPrecio = `${thousands},${hundreds}`;
-                    }
+                    const formatCurrencyDisplay = (val: any) => {
+                        if (val === null || val === undefined || val === '') return '';
+                        const num = Math.round(parseFloat(String(val)));
+                        if (isNaN(num) || num === 0) return '';
+                        const rawValue = String(num);
+                        if (rawValue.length > 6) {
+                            const millions = rawValue.slice(0, -6).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                            const thousands = rawValue.slice(-6, -3);
+                            const hundreds = rawValue.slice(-3);
+                            return `${millions}'${thousands},${hundreds}`;
+                        } else if (rawValue.length > 3) {
+                            const thousands = rawValue.slice(0, -3);
+                            const hundreds = rawValue.slice(-3);
+                            return `${thousands},${hundreds}`;
+                        }
+                        return rawValue;
+                    };
 
-                    const rawValueAdmin = String(data.admin_value || '').replace(/[^0-9]/g, '');
-                    let formattedAdmin = rawValueAdmin;
-                    if (rawValueAdmin.length > 6) {
-                        const millionsAdmin = rawValueAdmin.slice(0, -6).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                        const thousandsAdmin = rawValueAdmin.slice(-6, -3);
-                        const hundredsAdmin = rawValueAdmin.slice(-3);
-                        formattedAdmin = `${millionsAdmin}'${thousandsAdmin},${hundredsAdmin}`;
-                    } else if (rawValueAdmin.length > 3) {
-                        const thousandsAdmin = rawValueAdmin.slice(0, -3);
-                        const hundredsAdmin = rawValueAdmin.slice(-3);
-                        formattedAdmin = `${thousandsAdmin},${hundredsAdmin}`;
-                    }
+                    const formattedPrecio = formatCurrencyDisplay(data.price);
+                    const formattedAdmin = formatCurrencyDisplay(data.admin_value);
 
                     setFormData(prev => ({
                         ...prev,
@@ -236,9 +250,24 @@ export default function EditarInmueble() {
             if (formData.valor_administracion) data.append('admin_value', formData.valor_administracion.replace(/['',]/g, ''));
             if (formData.enlace_google_maps) data.append('google_maps_link', formData.enlace_google_maps);
 
+            // Imágenes eliminadas
+            deletedImageIds.forEach(delId => {
+                data.append('deleted_image_ids', String(delId));
+            });
+
+            // Establecer portada si se eligió una existente
+            if (setCoverImageId !== null && imagenes.length === 0) {
+                data.append('set_cover_image_id', String(setCoverImageId));
+            }
+
             // Nuevas imágenes
             if (imagenes.length > 0) {
                 data.append('cover_image', imagenes[portadaIndex]);
+                imagenes.forEach((file, idx) => {
+                    if (idx !== portadaIndex) {
+                        data.append('images', file);
+                    }
+                });
             }
 
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -455,27 +484,56 @@ export default function EditarInmueble() {
                         <textarea name="descripcion" value={formData.descripcion} onChange={handleInputChange} required rows={4} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white transition-all shadow-sm text-sm"></textarea>
                     </div>
 
-                    {/* Imágenes Actuales si no se suben nuevas */}
-                    {remoteImages.length > 0 && previews.length === 0 && (
-                        <div className="space-y-2 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Galería Actual</label>
-                            <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+                    {/* Galería de Imágenes Registradas */}
+                    {remoteImages.length > 0 && (
+                        <div className="space-y-3 bg-slate-50 dark:bg-slate-800/30 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">Galería Registrada ({remoteImages.length} fotos)</label>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">Puedes cambiar la foto de portada o eliminar fotos individuales</span>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
                                 {remoteImages.map((img) => (
-                                    <div key={img.id} className="relative rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 h-20">
+                                    <div key={img.id} className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 h-28 bg-slate-100 dark:bg-slate-800">
                                         <img src={img.imagen} alt="Inmueble" className="w-full h-full object-cover" />
+                                        
+                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/90 to-transparent p-2 pt-6 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSetRemoteCover(img.id);
+                                                }}
+                                                className={`px-2 py-1 text-[9px] uppercase tracking-wider font-bold rounded shadow-sm transition-colors ${img.es_portada ? 'bg-emerald-500 text-white' : 'bg-white text-slate-900 hover:bg-slate-100'}`}
+                                            >
+                                                {img.es_portada ? 'Portada' : 'Elegir'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRemoveRemoteImage(img.id);
+                                                }}
+                                                className="text-white bg-rose-500/90 rounded-full p-1.5 hover:bg-rose-600 backdrop-blur-sm transition-colors"
+                                                title="Eliminar foto"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+
                                         {img.es_portada && (
-                                            <span className="absolute bottom-0 inset-x-0 bg-emerald-500 text-white text-[10px] text-center font-bold px-1 py-0.5">PORTADA</span>
+                                            <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[9px] tracking-widest font-bold px-2 py-0.5 rounded shadow-sm border border-emerald-400">
+                                                PORTADA
+                                            </div>
                                         )}
                                     </div>
                                 ))}
                             </div>
-                            <p className="text-xs text-slate-500 mt-2">NOTA: Si subes imágenes nuevas, se reemplazarán enteramente las actuales del servidor.</p>
                         </div>
                     )}
 
                     <div className="space-y-2 relative mt-4">
                         <label className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-300">
-                            {previews.length === 0 && remoteImages.length > 0 ? 'Subir Nuevas Imágenes (Sobrescribir)' : 'Subir Imágenes'}
+                            Añadir Nuevas Imágenes a la Galería
                         </label>
 
                         <div
