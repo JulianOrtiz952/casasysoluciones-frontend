@@ -471,13 +471,24 @@ export default function DashboardInmuebleDetail() {
 
                             {inmueble.imagenes && inmueble.imagenes.length > 0 && (
                                 <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Galería</p>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Galería del Inmueble ({inmueble.imagenes.length})</p>
+                                        <span className="text-[10px] text-slate-400">Haz clic en una foto para verla completa</span>
+                                    </div>
                                     <div className="grid grid-cols-3 gap-2">
                                         {inmueble.imagenes.map(img => (
-                                            <div key={img.id} className="relative rounded-lg overflow-hidden h-16 border border-slate-200 dark:border-slate-700">
-                                                <img src={img.imagen} alt="Galería" className="w-full h-full object-cover" />
-                                                {img.es_portada && <span className="absolute bottom-0 inset-x-0 bg-emerald-500 text-white text-[8px] text-center font-bold px-1">PORTADA</span>}
-                                            </div>
+                                            <a
+                                                key={img.id}
+                                                href={img.imagen}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="relative group rounded-lg overflow-hidden h-20 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
+                                            >
+                                                <img src={img.imagen} alt="Galería" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                                {img.es_portada && (
+                                                    <span className="absolute bottom-0 inset-x-0 bg-emerald-500 text-white text-[8px] text-center font-bold px-1 py-0.5">PORTADA</span>
+                                                )}
+                                            </a>
                                         ))}
                                     </div>
                                 </div>

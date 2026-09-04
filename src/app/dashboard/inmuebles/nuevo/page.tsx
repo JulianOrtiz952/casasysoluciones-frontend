@@ -161,6 +161,11 @@ export default function NuevoInmueble() {
             // Agregar todas las imágenes
             if (imagenes.length > 0) {
                data.append('cover_image', imagenes[portadaIndex]);
+               imagenes.forEach((file, idx) => {
+                   if (idx !== portadaIndex) {
+                       data.append('images', file);
+                   }
+               });
             }
 
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
