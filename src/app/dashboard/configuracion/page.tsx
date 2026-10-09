@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { fetchApiJson } from '@/app/api-types';
+
+import { useState, useEffect, useCallback } from 'react';
 
 interface UserProfile {
     id: number;
@@ -28,42 +30,25 @@ export default function ConfiguracionPage() {
         confirm_password: ''
     });
 
-    useEffect(() => {
-        fetchProfile();
+    const fetchProfile = useCallback(() => {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const token = localStorage.getItem('token');
+        return fetchApiJson<UserProfile>(`${API_URL}/api/v1/auth/me/`, {
+            headers: { Authorization: `Bearer ${token}` }
+        }).then(data => {
+            setProfile(data);
+            setFormData({
+                first_name: data.first_name || '', last_name: data.last_name || '',
+                phone: data.phone || '', document_type: data.document_type || 'CC',
+                document_number: data.document_number || '', password: '', confirm_password: ''
+            });
+        }).catch(error => console.error('Error al obtener el perfil', error))
+            .finally(() => setLoading(false));
     }, []);
 
-    const fetchProfile = async () => {
-        setLoading(true);
-        try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/v1/auth/me/`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setProfile(data);
-                setFormData({
-                    first_name: data.first_name || '',
-                    last_name: data.last_name || '',
-                    phone: data.phone || '',
-                    document_type: data.document_type || 'CC',
-                    document_number: data.document_number || '',
-                    password: '',
-                    confirm_password: ''
-                });
-            } else {
-                console.error("Error al obtener el perfil.");
-            }
-        } catch (error) {
-            console.error("Error de red:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    useEffect(() => {
+        fetchProfile();
+    }, [fetchProfile]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -108,7 +93,7 @@ export default function ConfiguracionPage() {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const token = localStorage.getItem('token');
 
-            const payload: Record<string, any> = {
+            const payload: Record<string, string | boolean | null> = {
                 first_name: formData.first_name.trim(),
                 last_name: formData.last_name.trim(),
                 phone: formData.phone.trim(),

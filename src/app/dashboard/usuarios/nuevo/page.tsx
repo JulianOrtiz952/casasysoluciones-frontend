@@ -56,7 +56,7 @@ export default function NuevoUsuario() {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const token = localStorage.getItem('token');
 
-            const payload: Record<string, any> = {
+            const payload: Record<string, string | boolean | null> = {
                 first_name: formData.nombre.trim(),
                 last_name: formData.apellido.trim(),
                 email: formData.email.trim(),

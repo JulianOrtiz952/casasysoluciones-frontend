@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -109,7 +111,7 @@ export default function PublicInmuebleDetail() {
                     {/* Imagen Header */}
                     <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] relative bg-slate-100 dark:bg-slate-800 group rounded-t-3xl overflow-hidden">
                         {images.length > 0 ? (
-                            <img src={images[currentImageIdx]} alt={inmueble.address} className="w-full h-full object-cover transition-opacity duration-500" />
+                            <Image unoptimized width={800} height={600} src={images[currentImageIdx]} alt={inmueble.address} className="w-full h-full object-cover transition-opacity duration-500" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-400">
                                 <span className="font-semibold text-xl">Sin Fotos</span>
@@ -287,7 +289,7 @@ export default function PublicInmuebleDetail() {
                                                 }}
                                                 className={`relative rounded-2xl overflow-hidden h-48 border shadow-sm hover:shadow-md transition cursor-pointer group/item ${isSelected ? 'border-rose-500 ring-2 ring-rose-500' : 'border-slate-200 dark:border-slate-800'}`}
                                             >
-                                                <img src={img.image} alt="Galería" className="w-full h-full object-cover group-hover/item:scale-105 transition duration-500" />
+                                                <Image unoptimized width={800} height={600} src={img.image} alt="Galería" className="w-full h-full object-cover group-hover/item:scale-105 transition duration-500" />
                                                 {img.is_cover && (
                                                     <span className="absolute bottom-2 left-2 bg-emerald-500 text-white text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md shadow-sm">
                                                         Portada

@@ -1,5 +1,9 @@
 'use client';
 
+import { getErrorMessage } from '@/app/api-types';
+
+import Image from 'next/image';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -154,9 +158,9 @@ export default function NuevoTicketPage() {
 
             // 3. Redirect to the detail view
             router.push(`/dashboard/tickets/${ticketId}`);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error creating ticket:', err);
-            setError(err.message || 'Ocurrió un error inesperado al guardar el ticket.');
+            setError(getErrorMessage(err, 'Ocurrió un error inesperado al guardar el ticket.'));
             setLoading(false);
         }
     };
@@ -355,7 +359,7 @@ export default function NuevoTicketPage() {
                         {/* Thumbnails of already attached photos */}
                         {attachments.map((file, idx) => (
                             <div key={idx} className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 h-32 group">
-                                <img
+                                <Image unoptimized width={800} height={600}
                                     src={URL.createObjectURL(file)}
                                     alt={`Adjunto ${idx + 1}`}
                                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"

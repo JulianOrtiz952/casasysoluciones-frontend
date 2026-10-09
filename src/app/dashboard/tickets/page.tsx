@@ -1,20 +1,10 @@
 'use client';
 
+import { useSessionClaims } from '@/app/browser-state';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-function parseJwt(token: string) {
-    try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    } catch (e) {
-        return null;
-    }
-}
 
 interface Ticket {
     id: number;
@@ -35,17 +25,8 @@ export default function TicketsPage() {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('all');
-    const [userRole, setUserRole] = useState('');
-
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            const decoded = parseJwt(token);
-            if (decoded) {
-                setUserRole(decoded.role || decoded.rol || '');
-            }
-        }
-    }, []);
+    const claims = useSessionClaims();
+    const userRole = claims?.role || claims?.rol || '';
 
     useEffect(() => {
         const fetchTickets = async () => {

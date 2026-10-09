@@ -1,5 +1,9 @@
 'use client';
 
+import { useSessionClaims, notifySessionChange } from '@/app/browser-state';
+
+import Image from 'next/image';
+
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -99,16 +103,33 @@ function NavLink({
     );
 }
 
+function SidebarLogo() {
+    return (
+        <div className="h-16 flex items-center px-6 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
+            <Image unoptimized width={781} height={301} src="/logo.jpeg" alt="Logo" className="w-8 h-8 rounded shrink-0 mr-3 border border-slate-100/50" />
+            <span className="text-slate-900 dark:text-white font-bold text-lg tracking-tight">
+                Casas<span className="text-rose-600">y</span>Soluciones
+            </span>
+        </div>
+    );
+}
+
 // ─── Main layout ──────────────────────────────────────────────────────────────
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-    const [rolActual, setRolActual] = useState('SUPER');
+    const claims = useSessionClaims();
+    const [profileRole, setProfileRole] = useState('');
+    const rolActual = profileRole || claims?.role || claims?.rol || 'SUPER';
     const [userName, setUserName] = useState('');
     const [mobileOpen, setMobileOpen] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
 
     // Close mobile sidebar on route change
-    useEffect(() => { setMobileOpen(false); }, [pathname]);
+    const [previousPath, setPreviousPath] = useState(pathname);
+    if (previousPath !== pathname) {
+        setPreviousPath(pathname);
+        setMobileOpen(false);
+    }
 
     // Lock body scroll when mobile sidebar is open
     useEffect(() => {
@@ -132,7 +153,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (decoded) {
             const role = decoded.role || decoded.rol;
             if (role) {
-                setRolActual(role);
                 if (role === 'TENANT' && pathname === '/dashboard') router.push('/dashboard/inmuebles');
                 if (role === 'TECHNICIAN' && pathname === '/dashboard') router.push('/dashboard/tickets');
             }
@@ -145,7 +165,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    setRolActual(data.role);
+                    setProfileRole(data.role);
                     setUserName(`${data.first_name || ''} ${data.last_name || ''}`.trim() || data.email);
                 }
             } catch (e) { console.error('Error fetching profile:', e); }
@@ -172,7 +192,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        notifySessionChange();
+        router.replace('/login');
     };
 
     // ── Nav items builder ──────────────────────────────────────────────────
@@ -237,15 +258,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </span>
                 <span className="text-sm">Cerrar Sesión</span>
             </button>
-        </div>
-    );
-
-    const SidebarLogo = () => (
-        <div className="h-16 flex items-center px-6 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
-            <img src="/logo.jpeg" alt="Logo" className="w-8 h-8 rounded shrink-0 mr-3 border border-slate-100/50" />
-            <span className="text-slate-900 dark:text-white font-bold text-lg tracking-tight">
-                Casas<span className="text-rose-600">y</span>Soluciones
-            </span>
         </div>
     );
 

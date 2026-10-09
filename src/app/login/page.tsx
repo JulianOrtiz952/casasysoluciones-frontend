@@ -1,13 +1,17 @@
 'use client';
 
+import { notifySessionChange } from '@/app/browser-state';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -28,18 +32,19 @@ export default function LoginPage() {
                 const data = await res.json();
                 localStorage.setItem('token', data.access);
                 localStorage.setItem('refreshToken', data.refresh);
+                notifySessionChange();
                 router.push('/dashboard');
             } else {
                 setErrorMsg('Usuario o contraseña incorrectos');
             }
-        } catch (error) {
+        } catch {
             setErrorMsg('Fallo de conexión con el servidor');
         }
         setLoading(false);
     };
 
     return (
-        <main className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 font-sans p-4 relative overflow-hidden transition-colors duration-300">
+        <main className="min-h-svh flex items-center justify-center bg-slate-50 dark:bg-slate-950 font-sans px-4 py-24 sm:py-20 relative overflow-hidden transition-colors duration-300">
             {/* Background Orbs */}
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-rose-100/40 dark:bg-rose-900/20 rounded-full blur-[80px] opacity-60 mix-blend-multiply transform translate-x-1/2 -translate-y-1/2"></div>
             <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-100/40 dark:bg-blue-900/20 rounded-full blur-[80px] opacity-60 mix-blend-multiply transform -translate-x-1/3 translate-y-1/3"></div>
@@ -52,7 +57,7 @@ export default function LoginPage() {
                 Volver al Inicio
             </Link>
 
-            <div className="w-full max-w-md bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden border border-slate-100 dark:border-slate-800 p-8 sm:p-10 relative z-10 transition-all duration-300">
+            <div className="w-full max-w-md bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden border border-slate-100 dark:border-slate-800 p-6 sm:p-10 relative z-10 transition-all duration-300">
                 <div className="text-center mb-10">
                     <div className="inline-flex items-center justify-center mb-4 text-slate-800 dark:text-slate-200">
                         <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,12 +76,16 @@ export default function LoginPage() {
 
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div className="space-y-2 group">
-                        <label className="text-[11px] font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
+                        <label htmlFor="email" className="text-[11px] font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
                             Correo Electrónico
                         </label>
                         <div className="relative">
                             <input
                                 type="email"
+                                id="email"
+                                name="email"
+                                autoComplete="username"
+                                required
                                 placeholder="tu@ejemplo.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -86,17 +95,31 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-2 group">
-                        <label className="text-[11px] font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
+                        <label htmlFor="password" className="text-[11px] font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
                             Contraseña
                         </label>
                         <div className="relative">
                             <input
-                                type="password"
+                                type={showPassword ? 'text' : 'password'}
+                                id="password"
+                                name="password"
+                                autoComplete="current-password"
+                                required
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white text-slate-800 transition-all shadow-sm"
+                                className="w-full pl-5 pr-14 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-400 dark:text-white text-slate-800 transition-all shadow-sm"
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((visible) => !visible)}
+                                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                aria-pressed={showPassword}
+                                aria-controls="password"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 flex size-11 items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                            >
+                                {showPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
+                            </button>
                         </div>
                     </div>
 

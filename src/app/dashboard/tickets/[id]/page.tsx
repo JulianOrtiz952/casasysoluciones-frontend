@@ -1,7 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSessionClaims } from '@/app/browser-state';
+import { fetchApiJson, listResults, type Paginated } from '@/app/api-types';
+
+import { getErrorMessage } from '@/app/api-types';
+
+import type { TenantSummary } from '@/app/api-types';
+
+import Image from 'next/image';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAlert } from '@/app/alert-provider';
 
@@ -122,6 +131,21 @@ interface Ticket {
     }[];
 }
 
+interface ComparisonSpace {
+    id?: number;
+    space_name: string;
+    condition: 'GOOD' | 'REGULAR' | 'BAD';
+    condition_display: string;
+    observations?: string | null;
+}
+
+interface FinalCondition {
+    space_name: string;
+    condition: 'GOOD' | 'REGULAR' | 'BAD';
+    observations: string;
+    items: { name: string; checked: boolean }[];
+}
+
 const didConditionWorsen = (initial: string, final: string) => {
     const initialUpper = initial?.toUpperCase();
     const finalUpper = final?.toUpperCase();
@@ -133,14 +157,11 @@ const didConditionWorsen = (initial: string, final: string) => {
 
 export default function TicketDetailPage() {
     const params = useParams();
-    const router = useRouter();
     const { showConfirm, showAlert } = useAlert();
 
     const [ticket, setTicket] = useState<Ticket | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [reportingProblem, setReportingProblem] = useState(false);
-    const [rejectionReason, setRejectionReason] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
     const [adminRejectionReason, setAdminRejectionReason] = useState('');
     const [showRevertModal, setShowRevertModal] = useState(false);
@@ -157,168 +178,106 @@ export default function TicketDetailPage() {
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
     // Roles and Admin update fields
-    const [userRole, setUserRole] = useState<string>('');
+    const claims = useSessionClaims();
+    const userRole = claims?.role || claims?.rol || '';
     const [adminStatus, setAdminStatus] = useState<string>('OPEN');
     const [adminContractor, setAdminContractor] = useState<string>('');
     const [selectedTechnicians, setSelectedTechnicians] = useState<number[]>([]);
-    const [technicians, setTechnicians] = useState<any[]>([]);
+    const [technicians, setTechnicians] = useState<TenantSummary[]>([]);
 
     // Ticket history
     const [ticketHistory, setTicketHistory] = useState<TicketHistoryEntry[]>([]);
-    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyLoading, setHistoryLoading] = useState(true);
 
     // Technician evidence upload
     const [uploadingEvidence, setUploadingEvidence] = useState(false);
 
     // Inventory comparison (for CLOSURE tickets)
     const [initialInventory, setInitialInventory] = useState<InitialInventory | null>(null);
-    const [inventoryLoading, setInventoryLoading] = useState(false);
+    const [loadedInventoryKey, setLoadedInventoryKey] = useState<string | null>(null);
+    const inventoryKey = ticket?.damage_type === 'CLOSURE' && ticket.property?.id && ticket.tenant_detail
+        ? `${ticket.id}:${ticket.property.id}:${ticket.tenant_detail.id}:${ticket.created_at}` : null;
+    const inventoryLoading = inventoryKey !== null && inventoryKey !== loadedInventoryKey;
     const [showComparisonModal, setShowComparisonModal] = useState(false);
-    const [finalConditions, setFinalConditions] = useState<{
-        space_name: string;
-        condition: 'GOOD' | 'REGULAR' | 'BAD';
-        observations: string;
-        items: { name: string; checked: boolean }[];
-    }[]>([]);
+    const [finalConditions, setFinalConditions] = useState<FinalCondition[]>([]);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
     const getToken = () => localStorage.getItem('token');
 
-    const fetchTicketDetails = async () => {
-        try {
-            const token = getToken();
-            const res = await fetch(`${API_URL}/api/v1/tickets/${params.id}/`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setTicket(data);
-                setAdminStatus(data.status);
-                setAdminContractor(data.assigned_contractor_name || '');
-                setSelectedTechnicians(data.assigned_technicians || []);
-                setAdminRejectionReason(data.rejection_reason || '');
-            } else {
-                setError('No se pudo encontrar el ticket especificado.');
-            }
-        } catch (err) {
-            console.error('Error fetching ticket details:', err);
-            setError('Error de comunicación con el servidor.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchTicketHistory = async () => {
-        setHistoryLoading(true);
-        try {
-            const token = getToken();
-            const res = await fetch(`${API_URL}/api/v1/tickets/${params.id}/history/`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setTicketHistory(Array.isArray(data) ? data : (data.results || []));
-            }
-        } catch (err) {
-            console.error('Error fetching ticket history:', err);
-        } finally {
-            setHistoryLoading(false);
-        }
-    };
-
-    const fetchTechnicians = async () => {
-        try {
-            const token = getToken();
-            const res = await fetch(`${API_URL}/api/v1/users/?role=TECHNICIAN&active=1`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setTechnicians(data.results || data);
-            }
-        } catch (err) {
-            console.error('Error fetching technicians:', err);
-        }
-    };
-
-    const fetchInitialInventory = async (propertyId: number, tenantId: number) => {
-        if (!ticket) return;
-        setInventoryLoading(true);
-        try {
-            const token = getToken();
-            const res = await fetch(
-                `${API_URL}/api/v1/inventarios/?property_id=${propertyId}&tenant_id=${tenantId}&type=INITIAL&created_before=${ticket.created_at}`,
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-            if (res.ok) {
-                const data = await res.json();
-                const items = Array.isArray(data) ? data : (data.results || []);
-                if (items.length > 0) {
-                    // Fetch full detail with spaces
-                    const detailRes = await fetch(`${API_URL}/api/v1/inventarios/${items[0].id}/`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (detailRes.ok) {
-                        setInitialInventory(await detailRes.json());
-                    }
-                }
-            }
-        } catch (err) {
-            console.error('Error fetching initial inventory:', err);
-        } finally {
-            setInventoryLoading(false);
-        }
-    };
-
-
-
-    useEffect(() => {
-        // Decode token to get user role
+    const fetchTicketDetails = useCallback(() => {
         const token = getToken();
-        if (token) {
-            try {
-                const base64Url = token.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                }).join(''));
-                const decoded = JSON.parse(jsonPayload);
-                const role = decoded.role || decoded.rol;
-                if (role) {
-                    setUserRole(role);
-                }
-            } catch (e) {
-                console.error('Error decoding token:', e);
-            }
-        }
+        return fetchApiJson<Ticket>(`${API_URL}/api/v1/tickets/${params.id}/`, {
+            headers: { Authorization: `Bearer ${token}` }
+        }).then(data => {
+            setTicket(data);
+            setAdminStatus(data.status);
+            setAdminContractor(data.assigned_contractor_name || '');
+            setSelectedTechnicians(data.assigned_technicians || []);
+            setAdminRejectionReason(data.rejection_reason || '');
+        }).catch(error => {
+            console.error('Error fetching ticket details:', error);
+            setError('No se pudo cargar el ticket especificado.');
+        }).finally(() => setLoading(false));
+    }, [API_URL, params.id]);
 
+    const fetchTicketHistory = useCallback(() => {
+        const token = getToken();
+        return fetchApiJson<TicketHistoryEntry[] | Paginated<TicketHistoryEntry>>(`${API_URL}/api/v1/tickets/${params.id}/history/`, {
+            headers: { Authorization: `Bearer ${token}` }
+        }).then(data => setTicketHistory(listResults(data)))
+            .catch(error => console.error('Error fetching ticket history:', error))
+            .finally(() => setHistoryLoading(false));
+    }, [API_URL, params.id]);
+
+    const fetchTechnicians = useCallback(() => {
+        const token = getToken();
+        return fetchApiJson<TenantSummary[] | Paginated<TenantSummary>>(`${API_URL}/api/v1/users/?role=TECHNICIAN&active=1`, {
+            headers: { Authorization: `Bearer ${token}` }
+        }).then(data => setTechnicians(listResults(data)))
+            .catch(error => console.error('Error fetching technicians:', error));
+    }, [API_URL]);
+
+    const fetchInitialInventory = useCallback((propertyId: number, tenantId: number, createdAt: string, key: string) => {
+        const token = getToken();
+        const options = { headers: { Authorization: `Bearer ${token}` } };
+        return fetchApiJson<InitialInventory[] | Paginated<InitialInventory>>(
+            `${API_URL}/api/v1/inventarios/?property_id=${propertyId}&tenant_id=${tenantId}&type=INITIAL&created_before=${createdAt}`, options
+        ).then(async data => {
+            const inventories = listResults(data);
+            const inventory = inventories.length > 0
+                ? await fetchApiJson<InitialInventory>(`${API_URL}/api/v1/inventarios/${inventories[0].id}/`, options)
+                : null;
+            setInitialInventory(inventory);
+        }).catch(error => console.error('Error fetching initial inventory:', error))
+            .finally(() => setLoadedInventoryKey(key));
+    }, [API_URL]);
+
+    useEffect(() => {
         if (params.id) {
-            fetchTicketDetails();
-            fetchTicketHistory();
+            void fetchTicketDetails();
+            void fetchTicketHistory();
         }
-    }, [params.id]);
+    }, [params.id, fetchTicketDetails, fetchTicketHistory]);
 
     useEffect(() => {
-        if (userRole === 'ADMIN' || userRole === 'ASSISTANT') {
-            fetchTechnicians();
-        }
-    }, [userRole]);
+        if (userRole === 'ADMIN' || userRole === 'ASSISTANT') void fetchTechnicians();
+    }, [userRole, fetchTechnicians]);
 
-    // Fetch initial inventory for comparison when admin/assistant/technician views a CLOSURE ticket
+    const propertyId = ticket?.property?.id;
+    const tenantId = ticket?.tenant_detail?.id;
+    const createdAt = ticket?.created_at;
     useEffect(() => {
-        if (
-            ticket &&
-            ticket.damage_type === 'CLOSURE' &&
-            ticket.tenant_detail &&
-            ticket.property?.id
-        ) {
-            fetchInitialInventory(ticket.property.id, ticket.tenant_detail.id);
+        if (inventoryKey && propertyId && tenantId && createdAt) {
+            void fetchInitialInventory(propertyId, tenantId, createdAt, inventoryKey);
         }
-    }, [ticket?.id]);
+    }, [inventoryKey, propertyId, tenantId, createdAt, fetchInitialInventory]);
 
-    useEffect(() => {
-        if (ticket && ticket.damage_type === 'CLOSURE') {
+    const conditionSource = inventoryLoading ? null : (initialInventory || ticket);
+    const [previousConditionSource, setPreviousConditionSource] = useState(conditionSource);
+    if (conditionSource !== previousConditionSource) {
+        setPreviousConditionSource(conditionSource);
+        if (conditionSource && ticket && ticket.damage_type === 'CLOSURE') {
             if (initialInventory && initialInventory.spaces && initialInventory.spaces.length > 0) {
                 setFinalConditions(initialInventory.spaces.map(s => ({
                     space_name: s.space_name,
@@ -336,7 +295,7 @@ export default function TicketDetailPage() {
                     [initialInventory.spaces[0].space_name]: true
                 });
             } else if (!inventoryLoading && !initialInventory) {
-                const generated: any[] = [];
+                const generated: FinalCondition[] = [];
                 const defaultItems = [
                     { name: 'Paredes y pintura', checked: true },
                     { name: 'Pisos y zócalos', checked: true },
@@ -386,7 +345,7 @@ export default function TicketDetailPage() {
                 }
             }
         }
-    }, [initialInventory, inventoryLoading, ticket]);
+    }
 
     const handleConfirmRepair = async () => {
         setActionLoading(true);
@@ -535,45 +494,6 @@ export default function TicketDetailPage() {
         if (!confirmed) return;
         setRejectionModalText('');
         setShowRevertModal(true);
-    };
-
-    const handleReportProblem = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!rejectionReason.trim()) {
-            await showAlert('Por favor describe el inconveniente antes de enviar.', 'warning');
-            return;
-        }
-
-        setActionLoading(true);
-        try {
-            const token = getToken();
-            const res = await fetch(`${API_URL}/api/v1/tickets/${params.id}/report-problem/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ reason: rejectionReason.trim() })
-            });
-            if (res.ok) {
-                const updated = await res.json();
-                setTicket(updated);
-                setAdminStatus(updated.status);
-                setAdminContractor(updated.assigned_contractor_name || '');
-                setSelectedTechnicians(updated.assigned_technicians || []);
-                setReportingProblem(false);
-                setRejectionReason('');
-                fetchTicketHistory();
-                await showAlert('Reporte de inconveniente enviado. El ticket ha sido actualizado.', 'info');
-            } else {
-                await showAlert('Ocurrió un error al enviar el reporte.', 'error');
-            }
-        } catch (err) {
-            console.error('Error reporting problem:', err);
-            await showAlert('Error de conexión.', 'error');
-        } finally {
-            setActionLoading(false);
-        }
     };
 
     const handleAdminUpdate = async (e: React.FormEvent) => {
@@ -729,9 +649,9 @@ export default function TicketDetailPage() {
                 const errData = await res.json().catch(() => null);
                 await showAlert(errData?.message || errData?.error || 'Error al completar el ticket.', 'error');
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error completing ticket:', err);
-            await showAlert(err.message || 'Error de conexión.', 'error');
+            await showAlert(getErrorMessage(err, 'Error de conexión.'), 'error');
         } finally {
             setActionLoading(false);
         }
@@ -985,7 +905,7 @@ export default function TicketDetailPage() {
                                         onClick={() => setLightboxImage(getFullImageUrl(att.image_url))}
                                         className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 h-32 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer group shadow-sm"
                                     >
-                                        <img
+                                        <Image unoptimized width={800} height={600}
                                             src={getFullImageUrl(att.image_url)}
                                             alt="Evidencia"
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -1264,11 +1184,11 @@ export default function TicketDetailPage() {
                                                             <div className="flex items-center gap-2">
                                                                 {isClosureTicket && (
                                                                     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                                                                        ticket.attachments.some((a: any) => a.space_name === cond.space_name)
+                                                                        ticket.attachments.some((a) => a.space_name === cond.space_name)
                                                                             ? 'bg-teal-50 text-teal-600 border border-teal-100 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-900/40'
                                                                             : 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/40 animate-pulse'
                                                                     }`}>
-                                                                        {ticket.attachments.some((a: any) => a.space_name === cond.space_name)
+                                                                        {ticket.attachments.some((a) => a.space_name === cond.space_name)
                                                                             ? 'Con Foto'
                                                                             : 'Sin Foto'}
                                                                     </span>
@@ -1371,11 +1291,11 @@ export default function TicketDetailPage() {
                                                                             </label>
                                                                         </div>
 
-                                                                        {ticket?.attachments.filter((a: any) => a.space_name === cond.space_name).length > 0 ? (
+                                                                        {ticket?.attachments.filter((a) => a.space_name === cond.space_name).length > 0 ? (
                                                                             <div className="grid grid-cols-3 gap-2">
-                                                                                {ticket.attachments.filter((a: any) => a.space_name === cond.space_name).map((att: any) => (
+                                                                                {ticket.attachments.filter((a) => a.space_name === cond.space_name).map((att) => (
                                                                                     <div key={att.id} className="aspect-square bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden relative group border border-slate-200 dark:border-slate-800">
-                                                                                        <img src={getFullImageUrl(att.image_url)} alt="evidencia" className="w-full h-full object-cover" />
+                                                                                        <Image unoptimized width={800} height={600} src={getFullImageUrl(att.image_url)} alt="evidencia" className="w-full h-full object-cover" />
                                                                                         {isTechnician && (ticket.status === 'IN_PROGRESS' || ticket.status === 'ACCEPTED' || ticket.status === 'REJECTED' || ticket.status === 'OPEN') && (
                                                                                             <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                                                                 <button
@@ -1749,7 +1669,7 @@ export default function TicketDetailPage() {
                     className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300 cursor-zoom-out"
                 >
                     <div className="max-w-4xl max-h-[85vh] relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 shadow-2xl flex items-center justify-center">
-                        <img
+                        <Image unoptimized width={800} height={600}
                             src={lightboxImage}
                             alt="Lightbox"
                             className="max-w-full max-h-[85vh] object-contain select-none"
@@ -1810,18 +1730,18 @@ export default function TicketDetailPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                                            {((initialInventory ? initialInventory.spaces : (ticket?.final_space_conditions || [])) as any[]).map((spaceOrCond, idx) => {
+                                            {((initialInventory ? initialInventory.spaces : (ticket?.final_space_conditions || [])) as ComparisonSpace[]).map((spaceOrCond, idx) => {
                                                 let spaceName = '';
                                                 let initialCondition = '';
                                                 let initialConditionDisplay = 'No registrado';
-                                                let finalCond: any = null;
+                                                let finalCond: ComparisonSpace | null | undefined = null;
 
                                                 if (initialInventory) {
                                                     spaceName = spaceOrCond.space_name;
                                                     initialCondition = spaceOrCond.condition;
                                                     initialConditionDisplay = spaceOrCond.condition_display;
                                                     finalCond = ticket?.final_space_conditions?.find(
-                                                        (c: any) => c.space_name?.toLowerCase() === spaceName.toLowerCase()
+                                                        (c) => c.space_name?.toLowerCase() === spaceName.toLowerCase()
                                                     );
                                                 } else {
                                                     spaceName = spaceOrCond.space_name;
@@ -1960,7 +1880,7 @@ export default function TicketDetailPage() {
                                                                 onClick={() => setLightboxImage(getFullImageUrl(photo.image_url))}
                                                                 className="relative rounded-xl overflow-hidden h-20 cursor-pointer group border border-slate-200 dark:border-slate-700 hover:scale-[1.03] transition-all shadow-sm"
                                                             >
-                                                                <img
+                                                                <Image unoptimized width={800} height={600}
                                                                     src={getFullImageUrl(photo.thumbnail_url || photo.image_url)}
                                                                     alt={photo.description || space.space_name}
                                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -1998,7 +1918,7 @@ export default function TicketDetailPage() {
                                                     onClick={() => setLightboxImage(getFullImageUrl(att.image_url))}
                                                     className="relative rounded-2xl overflow-hidden h-36 cursor-pointer group border border-teal-200/50 dark:border-teal-900/40 hover:scale-[1.02] transition-all shadow-sm"
                                                 >
-                                                    <img
+                                                    <Image unoptimized width={800} height={600}
                                                         src={getFullImageUrl(att.image_url)}
                                                         alt={`Evidencia técnico ${idx + 1}`}
                                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

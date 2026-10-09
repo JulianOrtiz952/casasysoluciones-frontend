@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useSyncExternalStore } from 'react';
 
 type ThemeContextType = {
     theme: 'light' | 'dark';
@@ -9,29 +9,29 @@ type ThemeContextType = {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+function subscribeTheme(onChange: () => void) {
+    window.addEventListener('storage', onChange);
+    window.addEventListener('theme-change', onChange);
+    return () => {
+        window.removeEventListener('storage', onChange);
+        window.removeEventListener('theme-change', onChange);
+    };
+}
+
+const getTheme = (): 'light' | 'dark' => localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+const getServerTheme = (): 'light' | 'dark' => 'light';
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setTheme] = useState<'light' | 'dark'>('light'); // Por defecto claro
+    const theme = useSyncExternalStore(subscribeTheme, getTheme, getServerTheme);
 
     useEffect(() => {
-        // Al cargar la página, recuperar del local storage
-        const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-        if (savedTheme) {
-            setTheme(savedTheme);
-            document.documentElement.classList.toggle('dark', savedTheme === 'dark');
-        } else {
-            document.documentElement.classList.remove('dark'); // light base value
-        }
-    }, []);
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+    }, [theme]);
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
         localStorage.setItem('theme', newTheme);
-        if (newTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        window.dispatchEvent(new Event('theme-change'));
     };
 
     return (

@@ -1,5 +1,9 @@
 'use client';
 
+import type { PropertyImage } from '@/app/api-types';
+
+import Image from 'next/image';
+
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -87,7 +91,7 @@ export default function EditarInmueble() {
                 if (resInm.ok) {
                     const data = await resInm.json();
 
-                    const formatCurrencyDisplay = (val: any) => {
+                    const formatCurrencyDisplay = (val: string | number | null | undefined) => {
                         if (val === null || val === undefined || val === '') return '';
                         const num = Math.round(parseFloat(String(val)));
                         if (isNaN(num) || num === 0) return '';
@@ -123,7 +127,7 @@ export default function EditarInmueble() {
                         enlace_google_maps: data.google_maps_link || ''
                     }));
                     
-                    const mappedImages = data.images?.map((img: any) => ({
+                    const mappedImages = data.images?.map((img: PropertyImage) => ({
                         id: img.id,
                         imagen: img.image,
                         es_portada: img.is_cover
@@ -306,7 +310,7 @@ export default function EditarInmueble() {
                                     .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
                                     .join('\n');
                             }
-                        } catch (e) {}
+                        } catch {}
                         showError(histErrMsg);
                         setSaving(false);
                         return;
@@ -340,14 +344,14 @@ export default function EditarInmueble() {
                                 .join('\n');
                         }
                     }
-                } catch (jsonErr) {
+                } catch {
                     try {
                         const rawText = await response.text();
                         console.error("Error al actualizar (texto):", rawText);
                         if (rawText) {
                             errorMsg = rawText;
                         }
-                    } catch (textErr) {}
+                    } catch {}
                 }
                 showError(errorMsg);
             }
@@ -494,7 +498,7 @@ export default function EditarInmueble() {
                             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
                                 {remoteImages.map((img) => (
                                     <div key={img.id} className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 h-28 bg-slate-100 dark:bg-slate-800">
-                                        <img src={img.imagen} alt="Inmueble" className="w-full h-full object-cover" />
+                                        <Image unoptimized width={800} height={600} src={img.imagen} alt="Inmueble" className="w-full h-full object-cover" />
                                         
                                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/90 to-transparent p-2 pt-6 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
@@ -552,7 +556,7 @@ export default function EditarInmueble() {
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
                                 {previews.map((src, index) => (
                                     <div key={index} className="relative group rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
-                                        <img src={src} alt="Preview" className="w-full h-24 object-cover" />
+                                        <Image unoptimized width={800} height={600} src={src} alt="Preview" className="w-full h-24 object-cover" />
                                         <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1 flex justify-between items-center opacity-0 group-hover:opacity-100 transition">
                                             <button type="button" onClick={(e) => { e.stopPropagation(); setPortadaIndex(index); }} className={`px-2 py-0.5 text-xs font-bold rounded ${portadaIndex === index ? 'bg-emerald-500 text-white' : 'bg-white text-slate-900'}`}>
                                                 {portadaIndex === index ? 'Portada' : 'Elegir'}

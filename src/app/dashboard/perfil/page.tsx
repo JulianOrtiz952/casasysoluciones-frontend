@@ -18,7 +18,7 @@ export default function Perfil() {
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
             }).join(''));
             return JSON.parse(jsonPayload);
-        } catch (e) {
+        } catch {
             return null;
         }
     }
@@ -72,7 +72,7 @@ export default function Perfil() {
             } else {
                 setMensaje({ texto: data.error || "Ocurrió un error al intentar cambiar la contraseña", tipo: 'error' });
             }
-        } catch (error) {
+        } catch {
             setMensaje({ texto: "Fallo de conexión. Revisa tu internet o la URL del backend.", tipo: 'error' });
         }
         setCargando(false);

@@ -1,5 +1,9 @@
 'use client';
 
+import type { PropertyImage, TenantSummary, RentalHistory } from '@/app/api-types';
+
+import Image from 'next/image';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -69,7 +73,7 @@ export default function DashboardInmuebleDetail() {
     const [inmueble, setInmueble] = useState<Inmueble | null>(null);
     const [historial, setHistorial] = useState<Historial[]>([]);
     const [inquilinos, setInquilinos] = useState<Inquilino[]>([]);
-    const [legacyInquilinos, setLegacyInquilinos] = useState<any[]>([]);
+    const [legacyInquilinos, setLegacyInquilinos] = useState<Inquilino[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -96,7 +100,7 @@ export default function DashboardInmuebleDetail() {
                         precio: data.price,
                         descripcion: data.description || '',
                         imagen: data.cover_image,
-                        imagenes: data.images?.map((img: any) => ({
+                        imagenes: data.images?.map((img: PropertyImage) => ({
                             id: img.id,
                             imagen: img.image,
                             es_portada: img.is_cover
@@ -148,7 +152,7 @@ export default function DashboardInmuebleDetail() {
                 if (resInq.ok) {
                     const data = await resInq.json();
                     const list = Array.isArray(data) ? data : (data.results || []);
-                    const mappedInq = list.map((t: any) => ({
+                    const mappedInq = list.map((t: TenantSummary) => ({
                         id: t.id,
                         nombre: `${t.first_name || ''} ${t.last_name || ''}`.trim() || t.email,
                         identificacion: t.document_number || t.public_code || '',
@@ -253,7 +257,7 @@ export default function DashboardInmuebleDetail() {
             if (resAllTenants.ok) {
                 const data = await resAllTenants.json();
                 const list = Array.isArray(data) ? data : (data.results || []);
-                const tenantUser = list.find((t: any) => t.email.toLowerCase() === hist.inquilino_detalle.email.toLowerCase());
+                const tenantUser = list.find((t: TenantSummary) => t.email.toLowerCase() === hist.inquilino_detalle.email.toLowerCase());
                 if (tenantUser) {
                     // Desasociar en el sistema moderno
                     await fetch(`${API_URL}/api/v1/tenants/${tenantUser.id}/properties/${id}/`, {
@@ -394,7 +398,7 @@ export default function DashboardInmuebleDetail() {
                             {(() => {
                                 const mainImg = inmueble.imagenes?.find(img => img.es_portada)?.imagen || (inmueble.imagenes?.length ? inmueble.imagenes[0].imagen : inmueble.imagen);
                                 return mainImg ? (
-                                    <img src={mainImg} alt="Inmueble" className="w-full h-full object-cover" />
+                                    <Image unoptimized width={800} height={600} src={mainImg} alt="Inmueble" className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="flex w-full h-full items-center justify-center text-slate-400">Sin foto</div>
                                 );
@@ -484,7 +488,7 @@ export default function DashboardInmuebleDetail() {
                                                 rel="noopener noreferrer"
                                                 className="relative group rounded-lg overflow-hidden h-20 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
                                             >
-                                                <img src={img.imagen} alt="Galería" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                                <Image unoptimized width={800} height={600} src={img.imagen} alt="Galería" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                                                 {img.es_portada && (
                                                     <span className="absolute bottom-0 inset-x-0 bg-emerald-500 text-white text-[8px] text-center font-bold px-1 py-0.5">PORTADA</span>
                                                 )}
@@ -538,7 +542,7 @@ export default function DashboardInmuebleDetail() {
                                                 if (resHist.ok) {
                                                     const dataHist = await resHist.json();
                                                     const allHist = Array.isArray(dataHist) ? dataHist : (dataHist.results || []);
-                                                    const activeHist = allHist.find((h: any) => h.inmueble === Number(id) && h.esta_activo);
+                                                    const activeHist = allHist.find((h: RentalHistory) => h.inmueble === Number(id) && h.esta_activo);
                                                     if (activeHist) {
                                                         await fetch(`${API_URL}/api/v1/historial_alquiler/${activeHist.id}/`, {
                                                             method: 'PATCH',

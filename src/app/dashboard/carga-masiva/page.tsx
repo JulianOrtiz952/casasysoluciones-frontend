@@ -1,5 +1,7 @@
 'use client';
 
+import { getErrorMessage } from '@/app/api-types';
+
 import { useState, useRef } from 'react';
 import { useAlert } from '@/app/alert-provider';
 import { 
@@ -11,7 +13,6 @@ import {
     X, 
     RefreshCw, 
     FileSpreadsheet, 
-    ChevronRight,
     Check
 } from 'lucide-react';
 
@@ -97,9 +98,9 @@ export default function CargaMasivaPage() {
             window.URL.revokeObjectURL(url);
             
             showAlert(`Descarga de ${endpoint === 'template' ? 'plantilla' : 'exportación'} completada con éxito.`, 'success');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            showAlert(error.message || 'Error en la conexión con el servidor.');
+            showAlert(getErrorMessage(error, 'Error en la conexión con el servidor.'));
         }
     };
 
@@ -171,9 +172,9 @@ export default function CargaMasivaPage() {
             } else {
                 throw new Error(data.message || 'Error al validar el archivo.');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            showAlert(error.message || 'Error de conexión con el servidor.');
+            showAlert(getErrorMessage(error, 'Error de conexión con el servidor.'));
             setFile(null);
         } finally {
             setValidating(false);
@@ -216,9 +217,9 @@ export default function CargaMasivaPage() {
                     setReport(data);
                 }
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            showAlert(error.message || 'Error al importar los datos.');
+            showAlert(getErrorMessage(error, 'Error al importar los datos.'));
         } finally {
             setImporting(false);
         }

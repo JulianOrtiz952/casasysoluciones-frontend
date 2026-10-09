@@ -1,8 +1,9 @@
 'use client';
 
+import Image from 'next/image';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useTheme } from './theme-provider';
 
 interface PropertyImage {
   id: number;
@@ -61,7 +62,7 @@ function InmuebleCard({ inmueble }: { inmueble: Inmueble }) {
       <div className="h-64 overflow-hidden relative group bg-slate-100 dark:bg-slate-800">
         <Link href={`/inmuebles/${inmueble.id}`} className="block w-full h-full">
           {images.length > 0 ? (
-            <img src={images[currentIdx]} alt={inmueble.address} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            <Image unoptimized width={800} height={600} src={images[currentIdx]} alt={inmueble.address} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-400">
               <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -129,7 +130,6 @@ function InmuebleCard({ inmueble }: { inmueble: Inmueble }) {
 }
 
 export default function Home() {
-  const { theme, toggleTheme } = useTheme();
   const [inmuebles, setInmuebles] = useState<Inmueble[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -146,7 +146,7 @@ export default function Home() {
           const ofertas = items.filter(item => item.status === 'AVAILABLE');
           setInmuebles(ofertas);
         }
-      } catch (error) {
+      } catch {
         // Silenced for production
       } finally {
         setLoading(false);
@@ -160,21 +160,24 @@ export default function Home() {
       {/* Navbar Pública */}
       <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b border-slate-200/80 dark:border-slate-800 transition-colors duration-300 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
-              <img src="/logo.jpeg" alt="CasasySoluciones Logo" className="h-9 sm:h-11 w-auto rounded-md bg-white p-1 shadow-sm border border-slate-100" />
-              <h1 className="text-base sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <div className="flex justify-between items-center gap-3 min-h-20 py-3">
+            <Link href="/" aria-label="Casas y Soluciones, inicio" className="flex items-center gap-2 sm:gap-3 min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500">
+              <Image unoptimized width={781} height={301} src="/logo.jpeg" alt="" className="h-7 sm:h-11 w-auto shrink-0 rounded-md bg-white p-1 shadow-sm border border-slate-100" />
+              <div className="hidden min-[380px]:block">
+              <h1 className="text-sm sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
                 Casas<span className="text-rose-600">y</span>Soluciones
               </h1>
-            </div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <Link
-                href="/login"
-                className="text-xs sm:text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 px-4 py-2 sm:px-6 sm:py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 whitespace-nowrap"
+              <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400">Tu próximo hogar empieza aquí</p>
+              </div>
+            </Link>
+            <nav aria-label="Navegación principal" className="shrink-0">
+              <a
+                href="#catalogo"
+                className="inline-flex min-h-11 items-center text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-rose-600 dark:hover:text-rose-400 px-3 sm:px-5 rounded-full border border-slate-200 dark:border-slate-700 hover:border-rose-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 whitespace-nowrap"
               >
-                Iniciar Sesión
-              </Link>
-            </div>
+                Ver propiedades
+              </a>
+            </nav>
           </div>
         </div>
       </header>
@@ -198,13 +201,13 @@ export default function Home() {
       </section>
 
       {/* Catálogo */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 pb-24">
+      <section id="catalogo" aria-label="Propiedades disponibles" className="scroll-mt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 pb-16 sm:pb-24">
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div>
           </div>
         ) : inmuebles.length === 0 ? (
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-12 text-center shadow-xl border border-rose-50 dark:border-slate-800">
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 sm:p-12 text-center shadow-xl border border-rose-50 dark:border-slate-800">
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Próximamente más oportunidades</h3>
             <p className="text-slate-500 dark:text-slate-400">Actualmente no hay propiedades en oferta al público. ¡Vuelve a revisar en los próximos días!</p>
           </div>
@@ -216,6 +219,17 @@ export default function Home() {
           </div>
         )}
       </section>
+      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Casas y Soluciones</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Encuentra un espacio para tu próximo hogar.</p>
+          </div>
+          <Link href="/login" className="self-start inline-flex min-h-11 items-center text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:underline underline-offset-4 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500">
+            Acceso al equipo
+          </Link>
+        </div>
+      </footer>
     </main>
   );
 }

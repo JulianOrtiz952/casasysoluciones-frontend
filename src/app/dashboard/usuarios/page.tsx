@@ -1,6 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { fetchApiJson, listResults, type Paginated } from '@/app/api-types';
+
+import { useSessionClaims } from '@/app/browser-state';
+
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAlert } from '@/app/alert-provider';
 import { Modal } from '@/app/components/Modal';
@@ -38,30 +42,7 @@ export default function UsuariosPage() {
         password: ''
     });
     const [submitting, setSubmitting] = useState(false);
-    const [currentUserEmail, setCurrentUserEmail] = useState('');
-
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            const decoded = parseJwt(token);
-            if (decoded && decoded.email) {
-                setCurrentUserEmail(decoded.email);
-            }
-        }
-    }, []);
-
-    function parseJwt(token: string) {
-        try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        } catch (e) {
-            return null;
-        }
-    }
+    const currentUserEmail = useSessionClaims()?.email || '';
 
     const isCurrentUser = (email: string) => {
         return !!(currentUserEmail && email && currentUserEmail.toLowerCase() === email.toLowerCase());
@@ -110,7 +91,7 @@ export default function UsuariosPage() {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const token = localStorage.getItem('token');
 
-            const payload: Record<string, any> = {
+            const payload: Record<string, string | boolean | null> = {
                 first_name: editForm.first_name.trim(),
                 last_name: editForm.last_name.trim(),
                 phone: editForm.phone.trim(),
@@ -228,28 +209,19 @@ export default function UsuariosPage() {
         }
     };
 
-    useEffect(() => {
-        fetchUsuarios();
+    const fetchUsuarios = useCallback(() => {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const token = localStorage.getItem('token');
+        return fetchApiJson<Usuario[] | Paginated<Usuario>>(`${API_URL}/api/v1/usuarios/`, {
+            headers: { Authorization: `Bearer ${token}` }
+        }).then(data => setUsuarios(listResults(data)))
+            .catch(error => console.error('Error al cargar usuarios', error))
+            .finally(() => setLoading(false));
     }, []);
 
-    const fetchUsuarios = async () => {
-        setLoading(true);
-        try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/api/v1/usuarios/`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setUsuarios(Array.isArray(data) ? data : (data.results || []));
-            }
-        } catch (error) {
-            console.error("Error loading users:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    useEffect(() => {
+        fetchUsuarios();
+    }, [fetchUsuarios]);
 
     const staff = usuarios.filter(u => u.role !== 'TENANT');
     const filtered = staff.filter(u => filter === 'all' || u.role === filter);
@@ -307,7 +279,7 @@ export default function UsuariosPage() {
                 ].map(t => (
                     <button
                         key={t.id}
-                        onClick={() => setFilter(t.id as any)}
+                        onClick={() => setFilter(t.id as typeof filter)}
                         className={`px-6 py-2.5 text-xs font-black rounded-xl transition-all ${filter === t.id ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
                     >
                         {t.label}
@@ -448,7 +420,7 @@ export default function UsuariosPage() {
                                 <select
                                     disabled={isCurrentUser(editingUsuario.email)}
                                     value={editForm.role}
-                                    onChange={(e) => setEditForm({ ...editForm, role: e.target.value as any })}
+                                    onChange={(e) => setEditForm({ ...editForm, role: e.target.value as Usuario['role'] })}
                                     className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-rose-500 dark:text-white transition text-xs shadow-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
                                     <option value="ASSISTANT">Asistente Administrativo</option>

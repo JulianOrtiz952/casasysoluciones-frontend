@@ -1,5 +1,15 @@
 'use client';
 
+import { useSessionClaims } from '@/app/browser-state';
+
+import { useClientReady } from '@/app/browser-state';
+
+import { getErrorMessage } from '@/app/api-types';
+
+import type { RentalHistory } from '@/app/api-types';
+
+import Image from 'next/image';
+
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
@@ -40,24 +50,13 @@ const statusTags: Record<string, { label: string, color: string, bg: string }> =
     'MAINTENANCE': { label: 'Mantenimiento', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-100/50 dark:border-amber-900/30' },
 };
 
-function parseJwt(token: string) {
-    try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    } catch (e) {
-        return null;
-    }
-}
 
 export default function InmueblesPage() {
     const [inmuebles, setInmuebles] = useState<Inmueble[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'disponible' | 'ocupado'>('all');
-    const [userRole, setUserRole] = useState<string>('');
+    const claims = useSessionClaims();
+    const userRole = claims?.role || claims?.rol || '';
     const [searchQuery, setSearchQuery] = useState('');
     const [userId, setUserId] = useState<number | null>(null);
     const [cancelingLease, setCancelingLease] = useState(false);
@@ -68,7 +67,7 @@ export default function InmueblesPage() {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [propertyToCancel, setPropertyToCancel] = useState<Inmueble | null>(null);
     const [cancelError, setCancelError] = useState<string | null>(null);
-    const [mounted, setMounted] = useState(false);
+    const mounted = useClientReady();
 
     const getImageUrl = (url: string | null | undefined) => {
         if (!url) return '';
@@ -78,14 +77,8 @@ export default function InmueblesPage() {
     };
 
     useEffect(() => {
-        setMounted(true);
         const token = localStorage.getItem('token');
         if (token) {
-            const decoded = parseJwt(token);
-            if (decoded) {
-                const role = decoded.role || decoded.rol;
-                setUserRole(role || '');
-            }
 
             // Fetch me to get modern User ID for associations
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -176,7 +169,7 @@ export default function InmueblesPage() {
             if (resHist.ok) {
                 const dataHist = await resHist.json();
                 const allHist = Array.isArray(dataHist) ? dataHist : (dataHist.results || []);
-                const activeHist = allHist.find((h: any) => h.inmueble === prop.id && h.esta_activo);
+                const activeHist = allHist.find((h: RentalHistory) => h.inmueble === prop.id && h.esta_activo);
                 if (activeHist) {
                     const res2 = await fetch(`${API_URL}/api/v1/historial_alquiler/${activeHist.id}/`, {
                         method: 'PATCH',
@@ -197,8 +190,8 @@ export default function InmueblesPage() {
 
             setShowCancelModal(false);
             window.location.reload();
-        } catch (error: any) {
-            setCancelError(error.message || "Error al cancelar el arrendamiento.");
+        } catch (error: unknown) {
+            setCancelError(getErrorMessage(error, "Error al cancelar el arrendamiento."));
         } finally {
             setCancelingLease(false);
         }
@@ -296,7 +289,7 @@ export default function InmueblesPage() {
                             {/* Image Header */}
                             <div className="h-64 sm:h-80 w-full relative bg-slate-100 dark:bg-slate-800">
                                 {prop.cover_image ? (
-                                    <img src={getImageUrl(prop.cover_image)} alt="Vista de propiedad" className="w-full h-full object-cover" />
+                                    <Image unoptimized width={800} height={600} src={getImageUrl(prop.cover_image)} alt="Vista de propiedad" className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 dark:text-slate-700 gap-2">
                                         <svg className="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -628,7 +621,7 @@ export default function InmueblesPage() {
                         ].map(t => (
                             <button
                                 key={t.id}
-                                onClick={() => setFilter(t.id as any)}
+                                onClick={() => setFilter(t.id as typeof filter)}
                                 className={`px-5 py-2 text-sm font-bold rounded-xl transition-all ${filter === t.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-900'}`}
                             >
                                 {t.label}
@@ -677,7 +670,7 @@ export default function InmueblesPage() {
                                     <div className="flex items-center gap-4">
                                         <div className="w-14 h-14 bg-blue-600 dark:bg-blue-500 rounded-2xl flex items-center justify-center text-white overflow-hidden relative shadow-lg shadow-blue-600/20 shrink-0">
                                             {inv.cover_image ? (
-                                                <img src={getImageUrl(inv.cover_image)} alt={inv.owner_name} className="w-full h-full object-cover" />
+                                                <Image unoptimized width={800} height={600} src={getImageUrl(inv.cover_image)} alt={inv.owner_name} className="w-full h-full object-cover" />
                                             ) : (
                                                 <svg className="w-7 h-7 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                                             )}

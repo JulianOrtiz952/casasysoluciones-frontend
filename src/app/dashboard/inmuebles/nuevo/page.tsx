@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -206,7 +208,7 @@ export default function NuevoInmueble() {
                                 .join('\n');
                         }
                     }
-                } catch (jsonErr) {
+                } catch {
                     try {
                         const rawText = await response.text();
                         console.error("Error al guardar (texto):", rawText);
@@ -382,7 +384,7 @@ export default function NuevoInmueble() {
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
                                 {previews.map((src, index) => (
                                     <div key={index} className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
-                                        <img src={src} alt={`Preview ${index}`} className="w-full h-28 object-cover" />
+                                        <Image unoptimized width={800} height={600} src={src} alt={`Preview ${index}`} className="w-full h-28 object-cover" />
 
                                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/90 to-transparent p-2 pt-6 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button type="button" onClick={(e) => { e.stopPropagation(); setPortadaIndex(index); }} className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded shadow-sm transition-colors ${portadaIndex === index ? 'bg-emerald-500 text-white' : 'bg-white text-slate-900 hover:bg-slate-100'}`}>

@@ -1,8 +1,13 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { fetchApiJson, listResults, type Paginated } from '@/app/api-types';
+
+import type { InventoryPhoto, InventorySpace, TenantSummary } from '@/app/api-types';
+
+import Image from 'next/image';
+
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 
 interface Property {
     id: number;
@@ -38,37 +43,14 @@ interface Space {
     condition: 'GOOD' | 'REGULAR' | 'BAD';
     observations: string;
     quantity: number;
-    photos?: any[];
+    photos?: InventoryPhoto[];
     items: {
         name: string;
         checked: boolean;
     }[];
 }
 
-function NuevoInventarioForm() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const editId = searchParams.get('id');
-    const propertyParam = searchParams.get('property');
-
-    const [step, setStep] = useState(1);
-    const [loading, setLoading] = useState(false);
-    const [inventoryId, setInventoryId] = useState<number | null>(null);
-    const [isEditMode, setIsEditMode] = useState(false);
-
-    // Data for Step 1
-    const [properties, setProperties] = useState<Property[]>([]);
-    const [tenants, setTenants] = useState<Tenant[]>([]);
-    const [formData, setFormData] = useState({
-        property_id: '',
-        tenant_id: '',
-        delivery_date: new Date().toISOString().split('T')[0],
-        observations: '',
-        inventory_type: 'INITIAL'
-    });
-
-    // Data for Step 2
-    const defaultItems = [
+const defaultItems = [
         { name: 'Paredes y pintura', checked: true },
         { name: 'Pisos y zócalos', checked: true },
         { name: 'Puertas y cerraduras', checked: false },
@@ -76,14 +58,8 @@ function NuevoInventarioForm() {
         { name: 'Iluminación', checked: true }
     ];
 
-    const [spaces, setSpaces] = useState<Space[]>([
-        { space_name: 'Sala / Comedor 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
-        { space_name: 'Cocina 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
-        { space_name: 'Habitación 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
-        { space_name: 'Baño 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] }
-    ]);
 
-    const generateSpacesFromProperty = (property: Property): Space[] => {
+const generateSpacesFromProperty = (property: Property): Space[] => {
         const generatedSpaces: Space[] = [];
 
         const addSpaces = (name: string, count: number | null | undefined) => {
@@ -95,7 +71,7 @@ function NuevoInventarioForm() {
                         condition: 'GOOD',
                         observations: '',
                         quantity: 1,
-                        items: [...defaultItems]
+                        items: defaultItems.map(item => ({ ...item }))
                     });
                 }
             }
@@ -109,115 +85,113 @@ function NuevoInventarioForm() {
 
         if (generatedSpaces.length === 0) {
             return [
-                { space_name: 'Sala / Comedor 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
-                { space_name: 'Cocina 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
-                { space_name: 'Habitación 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] },
-                { space_name: 'Baño 1', condition: 'GOOD', observations: '', quantity: 1, items: [...defaultItems] }
+                { space_name: 'Sala / Comedor 1', condition: 'GOOD', observations: '', quantity: 1, items: defaultItems.map(item => ({ ...item })) },
+                { space_name: 'Cocina 1', condition: 'GOOD', observations: '', quantity: 1, items: defaultItems.map(item => ({ ...item })) },
+                { space_name: 'Habitación 1', condition: 'GOOD', observations: '', quantity: 1, items: defaultItems.map(item => ({ ...item })) },
+                { space_name: 'Baño 1', condition: 'GOOD', observations: '', quantity: 1, items: defaultItems.map(item => ({ ...item })) }
             ];
         }
 
         return generatedSpaces;
     };
 
-    useEffect(() => {
-        fetchInitialData();
+
+function NuevoInventarioForm() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const editId = searchParams.get('id');
+    const propertyParam = searchParams.get('property');
+
+    const [step, setStep] = useState(1);
+    const [loading, setLoading] = useState(false);
+    const [inventoryId, setInventoryId] = useState<number | null>(editId ? Number(editId) : null);
+    const isEditMode = Boolean(editId);
+
+    // Data for Step 1
+    const [properties, setProperties] = useState<Property[]>([]);
+    const [tenants, setTenants] = useState<Tenant[]>([]);
+    const [formData, setFormData] = useState({
+        property_id: '',
+        tenant_id: '',
+        delivery_date: new Date().toISOString().split('T')[0],
+        observations: '',
+        inventory_type: 'INITIAL'
+    });
+
+    // Data for Step 2
+
+    const [spaces, setSpaces] = useState<Space[]>([
+        { space_name: 'Sala / Comedor 1', condition: 'GOOD', observations: '', quantity: 1, items: defaultItems.map(item => ({ ...item })) },
+        { space_name: 'Cocina 1', condition: 'GOOD', observations: '', quantity: 1, items: defaultItems.map(item => ({ ...item })) },
+        { space_name: 'Habitación 1', condition: 'GOOD', observations: '', quantity: 1, items: defaultItems.map(item => ({ ...item })) },
+        { space_name: 'Baño 1', condition: 'GOOD', observations: '', quantity: 1, items: defaultItems.map(item => ({ ...item })) }
+    ]);
+
+
+    const fetchInventoryForEdit = useCallback((id: number) => {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const token = localStorage.getItem('token');
+        return fetchApiJson<{
+            property: Property; tenant: Tenant; delivery_date: string;
+            observations: string | null; inventory_type: string; spaces: InventorySpace[];
+        }>(`${API_URL}/api/v1/inventarios/${id}/`, {
+            headers: { Authorization: `Bearer ${token}` }
+        }).then(data => {
+            setInventoryId(id);
+            setFormData({
+                property_id: String(data.property.id), tenant_id: String(data.tenant.id),
+                delivery_date: data.delivery_date, observations: data.observations || '',
+                inventory_type: data.inventory_type
+            });
+            if (data.spaces.length > 0) {
+                setSpaces(data.spaces.map(space => ({
+                    ...space, observations: space.observations || '', quantity: space.quantity || 1,
+                    photos: space.photos || [], items: defaultItems.map(item => ({ ...item }))
+                })));
+            }
+        }).catch(error => console.error('Error fetching inventory for edit:', error));
     }, []);
 
     useEffect(() => {
-        if (editId) {
-            setIsEditMode(true);
-            setInventoryId(Number(editId));
-            fetchInventoryForEdit(Number(editId));
-        }
-    }, [editId]);
+        if (editId) void fetchInventoryForEdit(Number(editId));
+    }, [editId, fetchInventoryForEdit]);
 
     useEffect(() => {
-        const hasSavedSpaces = spaces.some(s => s.id !== undefined);
-        if (properties.length > 0 && formData.property_id && !hasSavedSpaces) {
-            const prop = properties.find(p => p.id === Number(formData.property_id));
-            if (prop) {
-                setSpaces(generateSpacesFromProperty(prop));
+        const controller = new AbortController();
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const token = localStorage.getItem('token');
+        const options = { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal };
+        void Promise.allSettled([
+            fetchApiJson<Property[] | Paginated<Property>>(`${API_URL}/api/v1/properties/`, options),
+            fetchApiJson<TenantSummary[] | Paginated<TenantSummary>>(`${API_URL}/api/v1/usuarios/`, options)
+        ]).then(([propertyResult, tenantResult]) => {
+            if (tenantResult.status === 'fulfilled') {
+                setTenants(listResults(tenantResult.value).filter(user => user.role === 'TENANT'));
+            } else if (!controller.signal.aborted) console.error('Error loading tenants:', tenantResult.reason);
+            if (propertyResult.status !== 'fulfilled') {
+                if (!controller.signal.aborted) console.error('Error loading properties:', propertyResult.reason);
+                return;
             }
-        }
-    }, [properties, formData.property_id]);
-
-    useEffect(() => {
-        if (properties.length > 0) {
-            if (editId) {
-                // loaded in fetchInventoryForEdit
-            } else if (propertyParam) {
-                const propId = propertyParam;
-                const prop = properties.find(p => p.id === Number(propId));
-                const activeTenantId = prop?.active_tenant ? String(prop.active_tenant.id) : '';
-                setFormData(prev => ({
-                    ...prev,
-                    property_id: propId,
-                    tenant_id: activeTenantId
-                }));
+            const loadedProperties = listResults(propertyResult.value);
+            setProperties(loadedProperties);
+            if (!editId && propertyParam) {
+                const property = loadedProperties.find(item => item.id === Number(propertyParam));
+                setFormData(previous => ({ ...previous, property_id: propertyParam,
+                    tenant_id: property?.active_tenant ? String(property.active_tenant.id) : '' }));
+                if (property) setSpaces(generateSpacesFromProperty(property));
             }
-        }
-    }, [properties, editId, propertyParam]);
-
-    const fetchInventoryForEdit = async (id: number) => {
-        try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/api/v1/inventarios/${id}/`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setFormData({
-                    property_id: String(data.property.id),
-                    tenant_id: String(data.tenant.id),
-                    delivery_date: data.delivery_date,
-                    observations: data.observations || '',
-                    inventory_type: data.inventory_type
-                });
-                
-                if (data.spaces && data.spaces.length > 0) {
-                    setSpaces(data.spaces.map((s: any) => ({
-                        id: s.id,
-                        space_name: s.space_name,
-                        condition: s.condition,
-                        observations: s.observations || '',
-                        quantity: s.quantity || 1,
-                        photos: s.photos || [],
-                        items: [...defaultItems]
-                    })));
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching inventory for edit:", error);
-        }
-    };
-
-    const fetchInitialData = async () => {
-        try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const token = localStorage.getItem('token');
-            const [propRes, tenantRes] = await Promise.all([
-                fetch(`${API_URL}/api/v1/properties/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${API_URL}/api/v1/usuarios/`, { headers: { 'Authorization': `Bearer ${token}` } })
-            ]);
-
-            if (propRes.ok) {
-                const data = await propRes.json();
-                setProperties(Array.isArray(data) ? data : (data.results || []));
-            }
-            if (tenantRes.ok) {
-                const data = await tenantRes.json();
-                const allUsers = Array.isArray(data) ? data : (data.results || []);
-                setTenants(allUsers.filter((u: any) => u.role === 'TENANT'));
-            }
-        } catch (error) {
-            console.error("Error loading initial data:", error);
-        }
-    };
+        }).catch(error => {
+            if (!controller.signal.aborted) console.error('Error loading initial data:', error);
+        });
+        return () => controller.abort();
+    }, [editId, propertyParam]);
 
     const handlePropertyChange = (propertyId: string) => {
         const prop = properties.find(p => p.id === Number(propertyId));
         const activeTenantId = prop?.active_tenant ? String(prop.active_tenant.id) : '';
+        if (prop && !spaces.some(space => space.id !== undefined)) {
+            setSpaces(generateSpacesFromProperty(prop));
+        }
         setFormData(prev => ({
             ...prev,
             property_id: propertyId,
@@ -320,7 +294,7 @@ function NuevoInventarioForm() {
                     id: data.spaces[idx].id,
                     photos: data.spaces[idx].photos || []
                 }));
-                // @ts-ignore
+
                 setSpaces(updatedSpaces);
                 setStep(3);
             }
@@ -351,16 +325,14 @@ function NuevoInventarioForm() {
 
             if (res.ok) {
                 const newPhoto = await res.json();
-                const newSpaces = spaces.map(s => {
-                    // @ts-ignore
+                setSpaces(currentSpaces => currentSpaces.map(s => {
+
                     if (s.id === spaceId) {
-                        // @ts-ignore
+
                         return { ...s, photos: [...(s.photos || []), newPhoto] };
                     }
                     return s;
-                });
-                // @ts-ignore
-                setSpaces(newSpaces);
+                }));
             }
         } catch (error) {
             console.error("Error uploading photo:", error);
@@ -382,16 +354,14 @@ function NuevoInventarioForm() {
             });
 
             if (res.ok) {
-                const newSpaces = spaces.map(s => {
-                    // @ts-ignore
+                setSpaces(currentSpaces => currentSpaces.map(s => {
+
                     if (s.id === spaceId) {
-                        // @ts-ignore
-                        return { ...s, photos: s.photos.filter((p: any) => p.id !== photoId) };
+
+                        return { ...s, photos: (s.photos || []).filter((p) => p.id !== photoId) };
                     }
                     return s;
-                });
-                // @ts-ignore
-                setSpaces(newSpaces);
+                }));
             }
         } catch (error) {
             console.error("Error deleting photo:", error);
@@ -463,7 +433,7 @@ function NuevoInventarioForm() {
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Completa los pasos para generar el reporte de inventario.</p>
                 </div>
-                
+
                 {/* Stepper UI */}
                 <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
                     {[1, 2, 3, 4, 5].map((s) => (
@@ -520,12 +490,12 @@ function NuevoInventarioForm() {
                                             (() => {
                                                 const t = tenants.find(t => t.id === Number(formData.tenant_id));
                                                 if (t) return <option value={t.id}>{t.first_name} {t.last_name}</option>;
-                                                
+
                                                 const p = properties.find(p => p.id === Number(formData.property_id));
                                                 if (p?.active_tenant && String(p.active_tenant.id) === formData.tenant_id) {
                                                     return <option value={p.active_tenant.id}>{p.active_tenant.first_name} {p.active_tenant.last_name}</option>;
                                                 }
-                                                
+
                                                 return <option value="">Cargando arrendatario...</option>;
                                             })()
                                         ) : (
@@ -700,7 +670,7 @@ function NuevoInventarioForm() {
                                         }`}
                                     >
                                         {s.space_name}
-                                        {/* @ts-ignore */}
+
                                         <span className="ml-2 opacity-50">({s.photos?.length || 0})</span>
                                     </button>
                                 ))}
@@ -713,11 +683,11 @@ function NuevoInventarioForm() {
                                     accept="image/*"
                                     onChange={(e) => {
                                         const files = Array.from(e.target.files || []);
-                                        // @ts-ignore
-                                        if (spaces[activeSpaceIdx]?.id) {
+
+                                        const spaceId = spaces[activeSpaceIdx]?.id;
+                                        if (spaceId !== undefined) {
                                             files.forEach(file => {
-                                                // @ts-ignore
-                                                handleUploadPhoto(spaces[activeSpaceIdx].id, file);
+                                                handleUploadPhoto(spaceId, file);
                                             });
                                         }
                                     }}
@@ -732,16 +702,16 @@ function NuevoInventarioForm() {
                                 </div>
                              </div>
 
-                             {/* @ts-ignore */}
+
                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                {/* @ts-ignore */}
-                                {spaces[activeSpaceIdx].photos?.map((photo: any) => (
+
+                                {spaces[activeSpaceIdx].photos?.map((photo) => (
                                     <div key={photo.id} className="aspect-square bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-hidden relative group border border-slate-200 dark:border-slate-800">
-                                        <img src={photo.thumbnail_url || photo.image_url} alt={photo.description} className="w-full h-full object-cover" />
+                                        <Image unoptimized width={800} height={600} src={photo.thumbnail_url || photo.image_url} alt={photo.description || "Evidencia del espacio"} className="w-full h-full object-cover" />
                                         <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                             <button 
-                                                // @ts-ignore
-                                                onClick={() => handleDeletePhoto(spaces[activeSpaceIdx].id, photo.id)}
+
+                                                onClick={() => { const spaceId = spaces[activeSpaceIdx]?.id; if (spaceId !== undefined) void handleDeletePhoto(spaceId, photo.id); }}
                                                 className="p-2 bg-rose-600 text-white rounded-lg hover:scale-110 transition-transform"
                                             >
                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -835,7 +805,7 @@ function NuevoInventarioForm() {
                                                     {s.space_name} {s.quantity > 1 ? `(x${s.quantity})` : ''}
                                                 </span>
                                                 <div className="flex items-center gap-3">
-                                                    {/* @ts-ignore */}
+
                                                     <span className="text-[10px] font-bold text-slate-400">{s.photos?.length || 0} fotos</span>
                                                     <span className={`text-[10px] font-black uppercase tracking-widest ${
                                                         s.condition === 'GOOD' ? 'text-emerald-600' :
@@ -890,7 +860,7 @@ function NuevoInventarioForm() {
                 <div className="space-y-6">
                     <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6 sticky top-8">
                         <h2 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">Resumen del Inventario</h2>
-                        
+
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400">

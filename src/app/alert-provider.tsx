@@ -1,5 +1,7 @@
 'use client';
 
+import { useClientReady } from '@/app/browser-state';
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 
@@ -174,11 +176,7 @@ function ToastComponent({ toast, onClose }: { toast: Toast; onClose: () => void 
 
 // Premium Confirm Dialog Modal
 function ConfirmModal({ config, onClose }: { config: ConfirmConfig; onClose: (val: boolean) => void }) {
-    const [isMounted, setIsMounted] = useState(false);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
+    const isMounted = useClientReady();
 
     const handleConfirm = () => {
         onClose(true);

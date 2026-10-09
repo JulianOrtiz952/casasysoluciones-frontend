@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchApiJson } from '@/app/api-types';
+
 import { useState, useEffect, useCallback } from 'react';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -189,20 +191,13 @@ export default function ReportesPage() {
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
 
-    const fetchData = useCallback(async (p: string) => {
-        setLoading(true);
-        try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/api/v1/admin/reports/?period=${p}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (res.ok) setData(await res.json());
-        } catch (e) {
-            console.error('Error fetching reports:', e);
-        } finally {
-            setLoading(false);
-        }
+    const fetchData = useCallback((p: string) => {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const token = localStorage.getItem('token');
+        return fetchApiJson<ReportData>(`${API_URL}/api/v1/admin/reports/?period=${p}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        }).then(setData).catch(error => console.error('Error fetching reports:', error))
+            .finally(() => setLoading(false));
     }, []);
 
     useEffect(() => { fetchData(period); }, [period, fetchData]);
@@ -262,7 +257,7 @@ export default function ReportesPage() {
                     <button
                         key={opt.value}
                         id={`period-${opt.value}`}
-                        onClick={() => setPeriod(opt.value)}
+                        onClick={() => { if (period !== opt.value) { setLoading(true); setPeriod(opt.value); } }}
                         className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${
                             period === opt.value
                                 ? 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-600/20'

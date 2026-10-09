@@ -1,6 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { fetchApiJson, listResults, type Paginated } from '@/app/api-types';
+
+import { useSessionClaims } from '@/app/browser-state';
+
+import { useClientReady } from '@/app/browser-state';
+
+import type { InventoryPhoto, InventorySpace } from '@/app/api-types';
+
+import Image from 'next/image';
+
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 
@@ -23,23 +33,16 @@ interface Inventario {
     spaces_count: number;
 }
 
-function parseJwt(token: string) {
-    try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    } catch (e) {
-        return null;
-    }
+
+interface InventoryDetail extends Inventario {
+    spaces: InventorySpace[];
 }
 
 export default function InventariosPage() {
     const [inventarios, setInventarios] = useState<Inventario[]>([]);
     const [loading, setLoading] = useState(true);
-    const [userRole, setUserRole] = useState<string>('');
+    const claims = useSessionClaims();
+    const userRole = claims?.role || claims?.rol || '';
     const [searchQuery, setSearchQuery] = useState('');
 
     // Modal states
@@ -58,13 +61,25 @@ export default function InventariosPage() {
 
     // View detail modal states
     const [showDetailModal, setShowDetailModal] = useState(false);
-    const [detailInventory, setDetailInventory] = useState<any | null>(null);
+    const [detailInventory, setDetailInventory] = useState<InventoryDetail | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
-    const [mounted, setMounted] = useState(false);
+    const mounted = useClientReady();
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const fetchInventarios = useCallback((page = 1) => {
+        const token = localStorage.getItem('token');
+        return fetchApiJson<Inventario[] | Paginated<Inventario>>(`${API_URL}/api/v1/inventarios/?page=${page}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        }).then(data => {
+            setInventarios(listResults(data));
+            setTotalPages(Array.isArray(data) ? 1 : Math.ceil(data.count / 10) || 1);
+            setCurrentPage(page);
+        }).catch(error => console.error('Error fetching inventarios:', error))
+            .finally(() => setLoading(false));
+    }, [API_URL]);
+
 
     const formatDate = (dateStr: string | null | undefined) => {
         if (!dateStr) return 'N/A';
@@ -72,44 +87,9 @@ export default function InventariosPage() {
         return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('es-ES');
     };
 
-    const fetchInventarios = async (page = 1) => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/api/v1/inventarios/?page=${page}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                if (Array.isArray(data)) {
-                    setInventarios(data);
-                    setTotalPages(1);
-                } else {
-                    setInventarios(data.results || []);
-                    const count = data.count || 0;
-                    setTotalPages(Math.ceil(count / 10) || 1);
-                }
-                setCurrentPage(page);
-            }
-        } catch (error) {
-            console.error("Error fetching inventarios:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
-        setMounted(true);
-        const token = localStorage.getItem('token');
-        if (token) {
-            const decoded = parseJwt(token);
-            if (decoded) {
-                const role = decoded.role || decoded.rol;
-                setUserRole(role || '');
-            }
-        }
         fetchInventarios(1);
-    }, []);
+    }, [fetchInventarios]);
 
     const handleDownloadPDF = async (inventoryId: number) => {
         try {
@@ -705,11 +685,11 @@ export default function InventariosPage() {
                                             <p className="text-slate-400 text-center text-xs py-4">Este inventario no tiene espacios registrados.</p>
                                         ) : (
                                             <div className="space-y-4">
-                                                {detailInventory.spaces.map((space: any, idx: number) => (
+                                                {detailInventory.spaces.map((space: InventorySpace, idx: number) => (
                                                     <div key={idx} className="p-5 border border-slate-200/70 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900/50 shadow-sm space-y-3">
                                                         <div className="flex justify-between items-start">
                                                             <h5 className="text-sm font-bold text-slate-900 dark:text-white uppercase">
-                                                                {space.space_name} {space.quantity > 1 ? `(Cantidad: ${space.quantity})` : ''}
+                                                                {space.space_name} {(space.quantity || 1) > 1 ? `(Cantidad: ${space.quantity})` : ''}
                                                             </h5>
                                                             <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
                                                                 space.condition === 'GOOD' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100/50 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' :
@@ -729,7 +709,7 @@ export default function InventariosPage() {
                                                         {/* Space Photos */}
                                                         {space.photos && space.photos.length > 0 && (
                                                             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 pt-2">
-                                                                {space.photos.map((photo: any, pIdx: number) => {
+                                                                {space.photos.map((photo: InventoryPhoto, pIdx: number) => {
                                                                     const imageUrl = photo.image_url ? (photo.image_url.startsWith('http') ? photo.image_url : `${API_URL}${photo.image_url}`) : '';
                                                                     return (
                                                                         <a 
@@ -739,7 +719,7 @@ export default function InventariosPage() {
                                                                             rel="noopener noreferrer"
                                                                             className="relative group h-20 rounded-xl overflow-hidden border border-slate-200/60 dark:border-slate-800 hover:scale-[1.03] transition-transform shadow-sm bg-slate-100"
                                                                         >
-                                                                            <img src={imageUrl} alt={photo.description || 'Foto del espacio'} className="w-full h-full object-cover" />
+                                                                            <Image unoptimized width={800} height={600} src={imageUrl} alt={photo.description || 'Foto del espacio'} className="w-full h-full object-cover" />
                                                                             {photo.description && (
                                                                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5">
                                                                                     <span className="text-[8px] text-white font-medium line-clamp-2 leading-tight">{photo.description}</span>
