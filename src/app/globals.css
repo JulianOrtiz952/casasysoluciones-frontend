@@ -84,3 +84,16 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+@keyframes gallery-image-enter {
+  from { opacity: 0; transform: translateX(12px) scale(1.02); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.gallery-image-enter {
+  animation: gallery-image-enter 320ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-image-enter { animation: none; }
+}
