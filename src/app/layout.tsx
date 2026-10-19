@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "./theme-provider";
 import { AlertProvider } from "./alert-provider";
 import { ConsoleSuppressor } from "./ConsoleSuppressor";
+import { SITE_URL } from "@/lib/properties";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +17,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Casas y Soluciones",
-  description: "Sistema de Gestión de Inmuebles y Arrendamientos",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Casas y Soluciones | Inmuebles en Norte de Santander",
+    template: "%s | Casas y Soluciones",
+  },
+  description: "Inmuebles disponibles en arriendo en Cúcuta y Norte de Santander.",
+  applicationName: "Casas y Soluciones",
+  authors: [{ name: "Casas y Soluciones" }],
+  creator: "Casas y Soluciones",
+  publisher: "Casas y Soluciones",
+  formatDetection: { email: false, address: false, telephone: false },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
   icons: {
     icon: "/logo.jpeg",
   },
@@ -29,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es-CO">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

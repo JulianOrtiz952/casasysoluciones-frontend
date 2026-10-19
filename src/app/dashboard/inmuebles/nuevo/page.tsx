@@ -5,10 +5,12 @@ import Image from 'next/image';
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { preparePropertyImages } from '@/lib/property-images';
 
 export default function NuevoInmueble() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [processingImages, setProcessingImages] = useState(false);
     const [dragActive, setDragActive] = useState(false);
 
     const [showErrorModal, setShowErrorModal] = useState(false);
@@ -70,19 +72,24 @@ export default function NuevoInmueble() {
         }
     };
 
-    const handleFiles = (files: File[]) => {
-        const validFiles = files.filter(file => file.type.startsWith('image/'));
-        if (validFiles.length === 0) return;
-
-        setImagenes(prev => [...prev, ...validFiles]);
-
-        validFiles.forEach(file => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPreviews(prev => [...prev, reader.result as string]);
-            };
-            reader.readAsDataURL(file);
-        });
+    const handleFiles = async (files: File[]) => {
+        setProcessingImages(true);
+        try {
+            const optimizedFiles = await preparePropertyImages(files, imagenes.length);
+            const newPreviews = await Promise.all(optimizedFiles.map(file => new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+                reader.readAsDataURL(file);
+            })));
+            setImagenes(prev => [...prev, ...optimizedFiles]);
+            setPreviews(prev => [...prev, ...newPreviews]);
+        } catch (error) {
+            showError(error instanceof Error ? error.message : 'No se pudieron procesar las imágenes.');
+        } finally {
+            setProcessingImages(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
     };
 
     const removeImage = (index: number) => {
@@ -376,7 +383,8 @@ export default function NuevoInmueble() {
                                 <span className="font-semibold text-slate-900 dark:text-rose-400 hover:underline">Sube tus archivos</span>
                                 <span className="ml-1">o arrástralos y suéltalos aquí</span>
                             </div>
-                            <input ref={fileInputRef} onChange={handleChange} name="imagenes" type="file" multiple className="hidden" accept="image/*" />
+                            <input ref={fileInputRef} onChange={handleChange} name="imagenes" type="file" multiple className="hidden" accept="image/jpeg,image/png,image/webp,image/gif" />
+                            <span className="mt-2 text-xs text-slate-400">JPG, PNG, WebP o GIF · máximo 12 MB por foto · hasta 20 fotos</span>
                         </div>
 
                         {/* Image Previews */}
@@ -410,8 +418,8 @@ export default function NuevoInmueble() {
                         <Link href="/dashboard/inmuebles" className="px-6 py-3.5 bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all text-sm tracking-wide">
                             Cancelar
                         </Link>
-                        <button disabled={loading} type="submit" className="px-8 py-3.5 bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white font-bold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] text-sm tracking-wide">
-                            {loading ? 'Guardando...' : 'Guardar Inmueble'}
+                        <button disabled={loading || processingImages} type="submit" className="px-8 py-3.5 bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white font-bold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] text-sm tracking-wide disabled:cursor-not-allowed disabled:opacity-60">
+                            {processingImages ? 'Optimizando fotos...' : loading ? 'Guardando...' : 'Guardar Inmueble'}
                         </button>
                     </div>
                 </form>

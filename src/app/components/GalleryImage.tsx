@@ -3,12 +3,16 @@
 import Image from 'next/image';
 import { useState } from 'react';
 
-function IncomingImage({ src, alt }: { src: string; alt: string }) {
+function shouldSkipOptimization(src: string) {
+    return src.startsWith('data:') || src.startsWith('blob:') || src.includes('localhost:8000') || src.includes('127.0.0.1:8000');
+}
+
+function IncomingImage({ src, alt, priority, sizes }: { src: string; alt: string; priority: boolean; sizes: string }) {
     const [loaded, setLoaded] = useState(false);
 
     return (
         <Image
-            unoptimized width={800} height={600} draggable={false}
+            unoptimized={shouldSkipOptimization(src)} fill draggable={false} priority={priority} sizes={sizes}
             src={src} alt={alt}
             onLoad={() => setLoaded(true)}
             className={`absolute inset-0 w-full h-full object-cover ${loaded ? 'gallery-image-enter' : 'opacity-0'}`}
@@ -16,22 +20,10 @@ function IncomingImage({ src, alt }: { src: string; alt: string }) {
     );
 }
 
-export function GalleryImage({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
-    const [images, setImages] = useState<{ current: string; previous: string | null }>({ current: src, previous: null });
-    if (images.current !== src) {
-        setImages({ current: src, previous: images.current });
-    }
-
+export function GalleryImage({ src, alt, className = '', priority = false, sizes = '100vw' }: { src: string; alt: string; className?: string; priority?: boolean; sizes?: string }) {
     return (
         <div className={`relative w-full h-full overflow-hidden ${className}`}>
-            {images.previous && (
-                <Image
-                    unoptimized width={800} height={600} draggable={false}
-                    src={images.previous} alt="" aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover"
-                />
-            )}
-            <IncomingImage key={src} src={src} alt={alt} />
+            <IncomingImage key={src} src={src} alt={alt} priority={priority} sizes={sizes} />
         </div>
     );
 }

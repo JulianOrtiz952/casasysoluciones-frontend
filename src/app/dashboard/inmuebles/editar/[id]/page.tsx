@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { preparePropertyImages } from '@/lib/property-images';
 
 interface Imagen {
     id: number;
@@ -25,6 +26,7 @@ export default function EditarInmueble() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [processingImages, setProcessingImages] = useState(false);
 
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorModalMessage, setErrorModalMessage] = useState('');
@@ -171,15 +173,27 @@ export default function EditarInmueble() {
         }
     };
 
-    const handleFiles = (files: File[]) => {
-        const validFiles = files.filter(f => f.type.startsWith('image/'));
-        if (validFiles.length === 0) return;
-        setImagenes(prev => [...prev, ...validFiles]);
-        validFiles.forEach(file => {
-            const reader = new FileReader();
-            reader.onloadend = () => setPreviews(prev => [...prev, reader.result as string]);
-            reader.readAsDataURL(file);
-        });
+    const handleFiles = async (files: File[]) => {
+        setProcessingImages(true);
+        try {
+            const optimizedFiles = await preparePropertyImages(
+                files,
+                remoteImages.length + imagenes.length,
+            );
+            const newPreviews = await Promise.all(optimizedFiles.map(file => new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+                reader.readAsDataURL(file);
+            })));
+            setImagenes(prev => [...prev, ...optimizedFiles]);
+            setPreviews(prev => [...prev, ...newPreviews]);
+        } catch (error) {
+            showError(error instanceof Error ? error.message : 'No se pudieron procesar las imágenes.');
+        } finally {
+            setProcessingImages(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
     };
 
     const removeImage = (index: number) => {
@@ -549,7 +563,8 @@ export default function EditarInmueble() {
                                 <span className="font-medium text-rose-500 hover:text-rose-600">Subir múltiples archivos</span>
                                 <span className="ml-1">o arrastrar y soltar</span>
                             </div>
-                            <input ref={fileInputRef} onChange={handleChange} name="imagenes" type="file" multiple className="hidden" accept="image/*" />
+                            <input ref={fileInputRef} onChange={handleChange} name="imagenes" type="file" multiple className="hidden" accept="image/jpeg,image/png,image/webp,image/gif" />
+                            <span className="mt-2 text-xs text-slate-400">JPG, PNG, WebP o GIF · máximo 12 MB por foto · hasta 20 fotos</span>
                         </div>
 
                         {previews.length > 0 && (
@@ -575,8 +590,8 @@ export default function EditarInmueble() {
                         <Link href={`/dashboard/inmuebles/${id}`} className="px-6 py-3 bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition text-sm">
                             Cancelar
                         </Link>
-                        <button disabled={saving} type="submit" className="px-8 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white font-bold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] flex items-center gap-2 active:scale-95 text-sm">
-                            {saving ? 'Guardando...' : 'Guardar Cambios'}
+                        <button disabled={saving || processingImages} type="submit" className="px-8 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white font-bold rounded-xl transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] flex items-center gap-2 active:scale-95 text-sm disabled:cursor-not-allowed disabled:opacity-60">
+                            {processingImages ? 'Optimizando fotos...' : saving ? 'Guardando...' : 'Guardar Cambios'}
                         </button>
                     </div>
                 </form>
