@@ -1,6 +1,7 @@
 export interface PropertyImage {
     id: number;
     image: string;
+    thumbnail?: string | null;
     is_cover: boolean;
 }
 

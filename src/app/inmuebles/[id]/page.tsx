@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { PropertyGallery } from "@/app/components/PropertyGallery";
-import { getProperty, propertyDescription, propertyImages, propertyPath, propertyTitle, SITE_URL, TYPE_NAMES } from "@/lib/properties";
+import { getProperty, propertyDescription, propertyImages, propertyPath, propertyPhotos, propertyTitle, SITE_URL, TYPE_NAMES } from "@/lib/properties";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +46,7 @@ export default async function PropertyDetail({ params }: PageProps) {
   const title = propertyTitle(property);
   const description = propertyDescription(property);
   const images = propertyImages(property);
+  const photos = propertyPhotos(property);
   const features = [
     property.rooms != null ? ["Habitaciones", property.rooms] : null,
     property.bathrooms != null ? ["Baños", property.bathrooms] : null,
@@ -78,7 +79,7 @@ export default async function PropertyDetail({ params }: PageProps) {
       <div className="mx-auto mt-6 max-w-6xl px-4 sm:px-6 lg:px-8">
         <nav aria-label="Migas de pan" className="mb-4 text-sm text-slate-500"><ol className="flex flex-wrap gap-2"><li><Link href="/" className="hover:text-rose-600">Inicio</Link></li><li aria-hidden="true">/</li><li><Link href="/#catalogo" className="hover:text-rose-600">Inmuebles</Link></li><li aria-hidden="true">/</li><li aria-current="page" className="line-clamp-1">{property.code}</li></ol></nav>
         <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
-          <PropertyGallery images={images} title={title} />
+          <PropertyGallery images={photos} title={title} />
           <div className="p-6 sm:p-10">
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
               <div><p className="text-xs font-bold uppercase tracking-widest text-rose-600">{TYPE_NAMES[property.type]} en arriendo · {property.code}</p><h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">{title}</h1><p className="mt-3 text-slate-600 dark:text-slate-300">{property.address}{property.building_name ? ` · ${property.building_name}` : ""}{property.unit_label ? ` · ${property.unit_label}` : ""}</p></div>

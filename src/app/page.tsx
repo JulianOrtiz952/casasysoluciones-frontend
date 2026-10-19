@@ -6,12 +6,24 @@ import { categoryPath, getProperties, propertyPath, SITE_URL, TYPE_PLURALS, type
 
 export const dynamic = "force-dynamic";
 
+const HOME_TITLE = "Arriendos en Cúcuta y Norte de Santander | Casas y Soluciones";
+const HOME_DESCRIPTION =
+  "Encuentra casas, apartamentos, locales y bodegas en arriendo en Cúcuta y Norte de Santander. Consulta precios, ubicaciones y fotografías actualizadas.";
+
 export const metadata: Metadata = {
-  title: "Inmuebles en arriendo en Cúcuta y Norte de Santander",
-  description: "Consulta casas, apartamentos, locales y bodegas disponibles en arriendo en Cúcuta y municipios de Norte de Santander.",
+  title: { absolute: HOME_TITLE },
+  description: HOME_DESCRIPTION,
   alternates: { canonical: "/" },
-  openGraph: { type: "website", locale: "es_CO", url: "/", title: "Inmuebles en arriendo | Casas y Soluciones", description: "Encuentra inmuebles disponibles en arriendo en Cúcuta y Norte de Santander.", siteName: "Casas y Soluciones" },
-  twitter: { card: "summary_large_image", title: "Inmuebles en arriendo | Casas y Soluciones", description: "Encuentra inmuebles disponibles en arriendo en Cúcuta y Norte de Santander." },
+  openGraph: {
+    type: "website",
+    locale: "es_CO",
+    url: "/",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+    siteName: "Casas y Soluciones",
+    images: [{ url: "/logo.jpeg", width: 781, height: 301, alt: "Casas y Soluciones" }],
+  },
+  twitter: { card: "summary_large_image", title: HOME_TITLE, description: HOME_DESCRIPTION, images: ["/logo.jpeg"] },
 };
 
 function categoryLinks(properties: Property[]) {

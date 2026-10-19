@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GalleryImage } from "./GalleryImage";
 import { useGallerySwipe } from "./useGallerySwipe";
 import {
   type Property,
-  propertyImages,
+  propertyPhotos,
   propertyPath,
   propertyTitle,
 } from "@/lib/properties";
@@ -19,7 +19,7 @@ const money = new Intl.NumberFormat("es-CO", {
 
 export function PropertyCard({ property, priority = false }: { property: Property; priority?: boolean }) {
   const [current, setCurrent] = useState(0);
-  const images = propertyImages(property);
+  const images = useMemo(() => propertyPhotos(property), [property]);
   const title = propertyTitle(property);
   const href = propertyPath(property);
   const swipe = useGallerySwipe(images.length, setCurrent);
@@ -27,7 +27,7 @@ export function PropertyCard({ property, priority = false }: { property: Propert
   useEffect(() => {
     if (images.length < 2) return;
     const preload = new window.Image();
-    preload.src = images[(current + 1) % images.length];
+    preload.src = images[(current + 1) % images.length].src;
   }, [current, images]);
 
   function changeImage(event: React.MouseEvent, direction: number) {
@@ -42,7 +42,8 @@ export function PropertyCard({ property, priority = false }: { property: Propert
         <Link href={href} className="block h-full w-full" aria-label={`Ver ${title}`}>
           {images.length ? (
             <GalleryImage
-              src={images[current]}
+              src={images[current].src}
+              previewSrc={images[current].previewSrc}
               alt={`${title}. Fotografía ${current + 1} de ${images.length}`}
               priority={priority && current === 0}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

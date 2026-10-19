@@ -1,7 +1,13 @@
 export interface PropertyImage {
   id: number;
   image: string;
+  thumbnail?: string | null;
   is_cover: boolean;
+}
+
+export interface PropertyPhoto {
+  src: string;
+  previewSrc?: string;
 }
 
 export interface Property {
@@ -104,13 +110,20 @@ export function imageUrl(value: string | null | undefined): string {
   return `${API_URL}${value.startsWith("/") ? "" : "/"}${value}`;
 }
 
-export function propertyImages(property: Property): string[] {
+export function propertyPhotos(property: Property): PropertyPhoto[] {
   if (property.images?.length) {
     return [...property.images]
       .sort((a, b) => Number(b.is_cover) - Number(a.is_cover))
-      .map((image) => imageUrl(image.image));
+      .map((image) => ({
+        src: imageUrl(image.image),
+        previewSrc: image.thumbnail ? imageUrl(image.thumbnail) : undefined,
+      }));
   }
-  return property.cover_image ? [imageUrl(property.cover_image)] : [];
+  return property.cover_image ? [{ src: imageUrl(property.cover_image) }] : [];
+}
+
+export function propertyImages(property: Property): string[] {
+  return propertyPhotos(property).map((photo) => photo.src);
 }
 
 export function propertyDescription(property: Property): string {
