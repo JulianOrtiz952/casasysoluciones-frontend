@@ -4,8 +4,26 @@ import { notifySessionChange } from '@/app/browser-state';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+
+const LOGIN_DEVICE_STORAGE_KEY = 'casasysoluciones.login-device-id';
+const LOGIN_BLOCKED_UNTIL_STORAGE_KEY = 'casasysoluciones.login-blocked-until';
+
+function getLoginDeviceId() {
+    const existing = localStorage.getItem(LOGIN_DEVICE_STORAGE_KEY);
+    if (existing) return existing;
+
+    const deviceId = crypto.randomUUID();
+    localStorage.setItem(LOGIN_DEVICE_STORAGE_KEY, deviceId);
+    return deviceId;
+}
+
+function formatRemainingTime(totalSeconds: number) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
 
 export default function LoginPage() {
     const router = useRouter();
@@ -14,17 +32,82 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
     const [loading, setLoading] = useState(false);
+    const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
+    const [remainingSeconds, setRemainingSeconds] = useState(0);
+
+    useEffect(() => {
+        const restoreBlock = () => {
+            const storedValue = Number(localStorage.getItem(LOGIN_BLOCKED_UNTIL_STORAGE_KEY));
+            const seconds = Math.max(0, Math.ceil((storedValue - Date.now()) / 1000));
+
+            if (Number.isFinite(storedValue) && seconds > 0) {
+                setBlockedUntil(storedValue);
+                setRemainingSeconds(seconds);
+                return;
+            }
+
+            localStorage.removeItem(LOGIN_BLOCKED_UNTIL_STORAGE_KEY);
+            setBlockedUntil(null);
+            setRemainingSeconds(0);
+        };
+
+        restoreBlock();
+        window.addEventListener('storage', restoreBlock);
+        return () => window.removeEventListener('storage', restoreBlock);
+    }, []);
+
+    useEffect(() => {
+        if (!blockedUntil) return;
+
+        const updateCountdown = () => {
+            const seconds = Math.max(0, Math.ceil((blockedUntil - Date.now()) / 1000));
+            setRemainingSeconds(seconds);
+
+            if (seconds === 0) {
+                localStorage.removeItem(LOGIN_BLOCKED_UNTIL_STORAGE_KEY);
+                setBlockedUntil(null);
+                setErrorMsg('');
+            }
+        };
+
+        updateCountdown();
+        const intervalId = window.setInterval(updateCountdown, 1000);
+        return () => window.clearInterval(intervalId);
+    }, [blockedUntil]);
+
+    const activateServerBlock = (data: unknown, retryAfterHeader: string | null) => {
+        const response = data as { error?: { details?: { locked_until?: string } } } | null;
+        const lockedUntilValue = response?.error?.details?.locked_until;
+        const serverTimestamp = lockedUntilValue ? Date.parse(lockedUntilValue) : Number.NaN;
+        const retryAfterSeconds = Number(retryAfterHeader);
+        const fallbackTimestamp = Number.isFinite(retryAfterSeconds)
+            ? Date.now() + Math.max(1, retryAfterSeconds) * 1000
+            : Number.NaN;
+        // Retry-After es relativo y evita depender de que el reloj del dispositivo esté sincronizado.
+        const timestamp = Number.isFinite(fallbackTimestamp) ? fallbackTimestamp : serverTimestamp;
+
+        if (!Number.isFinite(timestamp) || timestamp <= Date.now()) return;
+
+        localStorage.setItem(LOGIN_BLOCKED_UNTIL_STORAGE_KEY, String(timestamp));
+        setBlockedUntil(timestamp);
+        setRemainingSeconds(Math.max(1, Math.ceil((timestamp - Date.now()) / 1000)));
+    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (loading || (blockedUntil !== null && blockedUntil > Date.now())) return;
+
         setErrorMsg('');
         setLoading(true);
 
         try {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const res = await fetch(`${API_URL}/api/v1/token/`, {
+            const res = await fetch(`${API_URL}/api/v1/auth/login/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Device-ID': getLoginDeviceId(),
+                },
                 body: JSON.stringify({ email, password })
             });
 
@@ -35,7 +118,11 @@ export default function LoginPage() {
                 notifySessionChange();
                 router.push('/dashboard');
             } else {
-                setErrorMsg('Usuario o contraseña incorrectos');
+                const data = await res.json().catch(() => null);
+                if (res.status === 429) {
+                    activateServerBlock(data, res.headers.get('Retry-After'));
+                }
+                setErrorMsg(data?.error?.message || 'Usuario o contraseña incorrectos');
             }
         } catch {
             setErrorMsg('Fallo de conexión con el servidor');
@@ -69,7 +156,7 @@ export default function LoginPage() {
                 </div>
 
                 {errorMsg && (
-                    <div className="bg-rose-50/80 border border-rose-200 text-rose-600 rounded-xl p-3.5 text-center mb-8 text-sm font-semibold tracking-wide">
+                    <div aria-live="polite" className="bg-rose-50/80 border border-rose-200 text-rose-600 rounded-xl p-3.5 text-center mb-8 text-sm font-semibold tracking-wide">
                         {errorMsg}
                     </div>
                 )}
@@ -126,10 +213,15 @@ export default function LoginPage() {
                     <div className="pt-4">
                         <button
                             type="submit"
-                            disabled={loading}
-                            className={`w-full text-white font-semibold rounded-xl py-4 shadow-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 ${loading ? 'bg-slate-400 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]'}`}
+                            disabled={loading || remainingSeconds > 0}
+                            aria-disabled={loading || remainingSeconds > 0}
+                            className={`w-full text-white font-semibold rounded-xl py-4 shadow-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 ${loading || remainingSeconds > 0 ? 'bg-slate-400 dark:bg-slate-600 cursor-not-allowed shadow-none' : 'bg-slate-900 hover:bg-slate-800 dark:bg-rose-600 dark:hover:bg-rose-500 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]'}`}
                         >
-                            {loading ? 'Ingresando...' : 'Iniciar Sesión'}
+                            {loading
+                                ? 'Ingresando...'
+                                : remainingSeconds > 0
+                                    ? `Intenta de nuevo en ${formatRemainingTime(remainingSeconds)}`
+                                    : 'Iniciar Sesión'}
                         </button>
                     </div>
                 </form>

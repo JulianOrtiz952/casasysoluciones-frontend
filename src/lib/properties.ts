@@ -12,6 +12,7 @@ export interface PropertyPhoto {
 
 export interface Property {
   id: number;
+  title: string;
   code: string;
   address: string;
   city: string;
@@ -84,6 +85,9 @@ export function propertyLocation(property: Property): string {
 }
 
 export function propertyTitle(property: Property): string {
+  const registeredTitle = property.title?.replace(/\s+/g, " ").trim();
+  if (registeredTitle) return registeredTitle;
+
   const type = TYPE_NAMES[property.type] || property.type_display || "Inmueble";
   const rooms = property.rooms && !property.is_commercial
     ? ` de ${property.rooms} ${property.rooms === 1 ? "habitación" : "habitaciones"}`
