@@ -75,9 +75,9 @@ export default async function PropertyDetail({ params }: PageProps) {
   return (
     <main className="min-h-screen bg-rose-50/30 pb-20 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <header className="border-b border-rose-100 bg-white/90 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/90"><div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8"><Link href="/#catalogo" className="font-medium text-slate-600 hover:text-rose-600 dark:text-slate-300">← Volver al catálogo</Link></div></header>
+      <header className="border-b border-rose-100 bg-white/90 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/90"><div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8"><Link href="/" className="font-medium text-slate-600 hover:text-rose-600 dark:text-slate-300">← Volver al inicio</Link></div></header>
       <div className="mx-auto mt-6 max-w-6xl px-4 sm:px-6 lg:px-8">
-        <nav aria-label="Migas de pan" className="mb-4 text-sm text-slate-500"><ol className="flex flex-wrap gap-2"><li><Link href="/" className="hover:text-rose-600">Inicio</Link></li><li aria-hidden="true">/</li><li><Link href="/#catalogo" className="hover:text-rose-600">Inmuebles</Link></li><li aria-hidden="true">/</li><li aria-current="page" className="line-clamp-1">{property.code}</li></ol></nav>
+        <nav aria-label="Migas de pan" className="mb-4 text-sm text-slate-500"><ol className="flex flex-wrap gap-2"><li><Link href="/" className="hover:text-rose-600">Inicio</Link></li><li aria-hidden="true">/</li><li aria-current="page" className="line-clamp-1">{property.code}</li></ol></nav>
         <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
           <PropertyGallery images={photos} title={title} />
           <div className="p-6 sm:p-10">

@@ -53,12 +53,23 @@ export default async function Home() {
     <main className="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList).replace(/</g, "\\u003c") }} />
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-lg dark:border-slate-800 dark:bg-slate-900/90">
-        <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <Link href="/" aria-label="Casas y Soluciones, inicio" className="flex min-w-0 items-center gap-3 rounded-md focus-visible:ring-2 focus-visible:ring-rose-500">
-            <Image width={781} height={301} src="/logo.jpeg" alt="" priority sizes="160px" className="h-10 w-auto rounded-md border border-slate-100 bg-white p-1 shadow-sm" />
-            <div><span className="block text-base font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">Casas<span className="text-rose-600">y</span>Soluciones</span><span className="hidden text-xs text-slate-500 sm:block">Inmuebles en Norte de Santander</span></div>
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-center px-4 py-2.5 sm:min-h-20 sm:justify-start sm:px-6 sm:py-3 lg:justify-between lg:px-8">
+          <Link href="/" aria-label="Casas y Soluciones, inicio" className="group flex max-w-full min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 sm:gap-3">
+            <Image width={781} height={301} src="/logo.jpeg" alt="" priority sizes="(max-width: 640px) 94px, 114px" className="h-9 w-auto shrink-0 rounded-lg border border-slate-100 bg-white p-1 shadow-sm transition-shadow group-hover:shadow-md sm:h-11" />
+            <div className="min-w-0 leading-tight">
+              <span className="block truncate text-base font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">Casas<span className="text-rose-600">y</span>Soluciones</span>
+              <span className="mt-0.5 block truncate text-[10px] font-medium text-slate-500 sm:text-xs">Inmuebles en Norte de Santander</span>
+            </div>
           </Link>
-          <nav aria-label="Navegación principal"><a href="#catalogo" className="inline-flex min-h-11 items-center rounded-full border border-slate-200 px-4 text-sm font-semibold hover:border-rose-300 hover:text-rose-600 dark:border-slate-700">Ver inmuebles</a></nav>
+          <div className="hidden items-center gap-3 border-l border-slate-200 pl-5 dark:border-slate-700 lg:flex" aria-label="Cobertura inmobiliaria">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-50 ring-1 ring-rose-100 dark:bg-rose-950/40 dark:ring-rose-900/60" aria-hidden="true">
+              <span className="h-2.5 w-2.5 rounded-full bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.12)]" />
+            </span>
+            <div className="text-right leading-tight">
+              <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-rose-600">Propiedades en arriendo</span>
+              <span className="mt-1 block text-sm font-semibold text-slate-700 dark:text-slate-200">Cúcuta · Norte de Santander</span>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -70,8 +81,8 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="catalogo" aria-labelledby="catalogo-title" className="mx-auto -mt-12 max-w-7xl scroll-mt-24 px-4 pb-20 sm:px-6 lg:px-8">
-        <div className="mb-8"><h2 id="catalogo-title" className="text-2xl font-bold text-slate-900 dark:text-white">Propiedades disponibles</h2><p className="mt-2 text-slate-600 dark:text-slate-400">{properties.length ? `${properties.length} ${properties.length === 1 ? "inmueble disponible" : "inmuebles disponibles"}.` : "El catálogo se está actualizando."}</p></div>
+      <section aria-labelledby="properties-title" className="mx-auto -mt-12 max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
+        <div className="mb-8"><h2 id="properties-title" className="text-2xl font-bold text-slate-900 dark:text-white">Propiedades disponibles</h2><p className="mt-2 text-slate-600 dark:text-slate-400">{properties.length ? `${properties.length} ${properties.length === 1 ? "inmueble disponible" : "inmuebles disponibles"}.` : "La oferta de inmuebles se está actualizando."}</p></div>
         {properties.length ? <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">{properties.map((property, index) => <PropertyCard key={property.id} property={property} priority={index < 3} />)}</div> : <div className="rounded-2xl border border-rose-50 bg-white/80 p-8 text-center shadow-xl dark:border-slate-800 dark:bg-slate-900/80"><h2 className="text-2xl font-bold">Próximamente más oportunidades</h2><p className="mt-2 text-slate-500">No hay propiedades disponibles públicamente en este momento.</p></div>}
       </section>
 
