@@ -15,6 +15,7 @@ export interface Property {
   title: string;
   code: string;
   address: string;
+  google_maps_link?: string | null;
   city: string;
   building_name: string;
   unit_label: string;

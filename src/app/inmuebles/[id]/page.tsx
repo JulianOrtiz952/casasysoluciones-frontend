@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { PropertyGallery } from "@/app/components/PropertyGallery";
+import { propertyMap } from "@/lib/property-map";
 import { getProperty, propertyDescription, propertyImages, propertyPath, propertyPhotos, propertyTitle, SITE_URL, TYPE_NAMES } from "@/lib/properties";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +48,7 @@ export default async function PropertyDetail({ params }: PageProps) {
   const description = propertyDescription(property);
   const images = propertyImages(property);
   const photos = propertyPhotos(property);
+  const map = await propertyMap(property);
   const features = [
     property.rooms != null ? ["Habitaciones", property.rooms] : null,
     property.bathrooms != null ? ["Baños", property.bathrooms] : null,
@@ -89,7 +91,27 @@ export default async function PropertyDetail({ params }: PageProps) {
             {features.length > 0 && <section aria-labelledby="caracteristicas" className="mt-10"><h2 id="caracteristicas" className="text-2xl font-bold">Características del inmueble</h2><dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">{features.map(([label, value]) => <div key={label} className="rounded-xl border border-slate-200 p-4 text-center dark:border-slate-700"><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1 text-2xl font-bold">{value}</dd></div>)}</dl></section>}
 
             <section aria-labelledby="descripcion" className="mt-10"><h2 id="descripcion" className="text-2xl font-bold">Descripción</h2><p className="mt-4 whitespace-pre-line leading-7 text-slate-600 dark:text-slate-300">{property.description?.trim() || description}</p></section>
-            <section aria-labelledby="ubicacion" className="mt-10"><h2 id="ubicacion" className="text-2xl font-bold">Ubicación</h2><p className="mt-4 text-slate-600 dark:text-slate-300">{property.address}{property.city ? `, ${property.city}` : ", Norte de Santander"}</p></section>
+            <section aria-labelledby="ubicacion" className="mt-10">
+              <h2 id="ubicacion" className="text-2xl font-bold">Ubicación</h2>
+              <p className="mt-4 text-slate-600 dark:text-slate-300">{property.address}{property.city ? `, ${property.city}` : ", Norte de Santander"}</p>
+              <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                {map.embed && <iframe
+                  src={map.embed}
+                  title={`Mapa de ubicación de ${title}`}
+                  className="h-60 w-full border-0 sm:h-[350px]"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                />}
+                {!map.embed && <p className="p-4 text-sm text-slate-600 dark:text-slate-300">{map.link ? "Consulta la ubicación en el enlace de Google Maps." : "Ubicación por confirmar."}</p>}
+                {map.link && (
+                  <div className="flex flex-col items-center justify-between gap-4 border-t border-rose-100 bg-rose-50 p-4 sm:flex-row dark:border-slate-700 dark:bg-slate-900">
+                    <p className="text-sm text-slate-600 dark:text-slate-300">El propietario ha compartido una ubicación exacta.</p>
+                    <a href={map.link} target="_blank" rel="noopener noreferrer" className="inline-flex w-full shrink-0 items-center justify-center rounded-xl bg-rose-600 px-6 py-3 font-bold text-white transition hover:bg-rose-700 sm:w-auto">Abrir ubicación exacta</a>
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
         </article>
       </div>
