@@ -152,7 +152,7 @@ export default function NuevoInmueble() {
             const data = new FormData();
             data.append('owner_name', formData.owner_name);
             data.append('price', formData.price.replace(/['',]/g, ''));
-            data.append('address', formData.address || 'Ver enlace de Google Maps adjunto');
+            data.append('address', formData.address.trim());
             data.append('description', formData.description);
             data.append('type', formData.type);
 

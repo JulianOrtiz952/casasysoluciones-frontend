@@ -30,12 +30,16 @@ export async function propertyMap(property: Location, request: typeof fetch = fe
   if (link) {
     let current: URL | null = link;
     // Resolve shared short links on the server; never follow redirects outside Maps.
-    const signal = AbortSignal.timeout(4000);
+    const signal = AbortSignal.timeout(10000);
     try {
       for (let hop = 0; current && hop < 5; hop++) {
         const embed = embedUrl(current);
-        if (embed) return { embed, link: link.href };
-        const response = await request(current.href, { redirect: "manual", signal });
+        if (embed) {
+          const place = current.pathname.match(/\/maps\/place\/([^/]+)/)?.[1];
+          const label = place ? decodeURIComponent(place.replace(/\+/g, " ")) : new URL(embed).searchParams.get("q");
+          return { embed, link: link.href, label };
+        }
+        const response = await request(current.href, { method: "HEAD", redirect: "manual", signal });
         const redirect = response.headers.get("location");
         await response.body?.cancel();
         if (response.status < 300 || response.status >= 400 || !redirect) break;

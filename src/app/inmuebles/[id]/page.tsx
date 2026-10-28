@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { PropertyGallery } from "@/app/components/PropertyGallery";
 import { propertyMap } from "@/lib/property-map";
+import { propertyAddress } from "@/lib/property-address";
 import { getProperty, propertyDescription, propertyImages, propertyPath, propertyPhotos, propertyTitle, SITE_URL, TYPE_NAMES } from "@/lib/properties";
 
 export const dynamic = "force-dynamic";
@@ -49,6 +50,8 @@ export default async function PropertyDetail({ params }: PageProps) {
   const images = propertyImages(property);
   const photos = propertyPhotos(property);
   const map = await propertyMap(property);
+  const address = propertyAddress(property.address);
+  const locationLabel = map.link ? map.label || "Ubicación compartida en Google Maps" : [address, property.city].filter(Boolean).join(", ") || "Ubicación por confirmar";
   const features = [
     property.rooms != null ? ["Habitaciones", property.rooms] : null,
     property.bathrooms != null ? ["Baños", property.bathrooms] : null,
@@ -69,7 +72,7 @@ export default async function PropertyDetail({ params }: PageProps) {
     about: {
       "@type": property.type === "HOUSE" ? "House" : property.type === "APARTMENT" ? "Apartment" : "Place",
       name: title,
-      address: { "@type": "PostalAddress", streetAddress: property.address, addressLocality: property.city || undefined, addressRegion: "Norte de Santander", addressCountry: "CO" },
+      address: { "@type": "PostalAddress", streetAddress: address || undefined, addressLocality: property.city || undefined, addressRegion: "Norte de Santander", addressCountry: "CO" },
       numberOfRooms: property.rooms || undefined,
     },
   };
@@ -84,7 +87,7 @@ export default async function PropertyDetail({ params }: PageProps) {
           <PropertyGallery images={photos} title={title} />
           <div className="p-6 sm:p-10">
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
-              <div><p className="text-xs font-bold uppercase tracking-widest text-rose-600">{TYPE_NAMES[property.type]} en arriendo · {property.code}</p><h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">{title}</h1><p className="mt-3 text-slate-600 dark:text-slate-300">{property.address}{property.building_name ? ` · ${property.building_name}` : ""}{property.unit_label ? ` · ${property.unit_label}` : ""}</p></div>
+              <div><p className="text-xs font-bold uppercase tracking-widest text-rose-600">{TYPE_NAMES[property.type]} en arriendo · {property.code}</p><h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">{title}</h1><p className="mt-3 text-slate-600 dark:text-slate-300">{locationLabel}{property.building_name ? ` · ${property.building_name}` : ""}{property.unit_label ? ` · ${property.unit_label}` : ""}</p></div>
               <div className="shrink-0 rounded-2xl bg-slate-50 p-5 dark:bg-slate-800"><span className="text-xs font-bold uppercase tracking-wider text-slate-500">Canon mensual</span><p className="mt-1 text-3xl font-black text-rose-600">{money.format(Number(property.price))}</p>{property.in_complex && <p className="mt-1 text-xs text-slate-500">Administración {property.admin_included ? "incluida" : property.admin_value ? money.format(Number(property.admin_value)) : "por consultar"}</p>}</div>
             </div>
 
@@ -93,7 +96,7 @@ export default async function PropertyDetail({ params }: PageProps) {
             <section aria-labelledby="descripcion" className="mt-10"><h2 id="descripcion" className="text-2xl font-bold">Descripción</h2><p className="mt-4 whitespace-pre-line leading-7 text-slate-600 dark:text-slate-300">{property.description?.trim() || description}</p></section>
             <section aria-labelledby="ubicacion" className="mt-10">
               <h2 id="ubicacion" className="text-2xl font-bold">Ubicación</h2>
-              <p className="mt-4 text-slate-600 dark:text-slate-300">{property.address}{property.city ? `, ${property.city}` : ", Norte de Santander"}</p>
+              <p className="mt-4 text-slate-600 dark:text-slate-300">{locationLabel}</p>
               <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
                 {map.embed && <iframe
                   src={map.embed}

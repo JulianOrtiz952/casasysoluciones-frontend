@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { preparePropertyImages } from '@/lib/property-images';
+import { propertyAddress } from '@/lib/property-address';
 
 interface Imagen {
     id: number;
@@ -116,9 +117,9 @@ export default function EditarInmueble() {
 
                     setFormData(prev => ({
                         ...prev,
-                        titulo: data.code,
+                        titulo: data.title || data.owner_name || '',
                         precio: formattedPrecio,
-                        direccion: data.address,
+                        direccion: propertyAddress(data.address),
                         descripcion: data.description || '',
                         estado: data.status === 'AVAILABLE' ? 'en_oferta' :
                                 data.status === 'RENTED' ? 'arrendada' :
@@ -252,9 +253,9 @@ export default function EditarInmueble() {
         try {
             const token = localStorage.getItem('token');
             const data = new FormData();
-            data.append('code', formData.titulo); // Map legacy title to code
+            data.append('owner_name', formData.titulo.trim());
             data.append('price', formData.precio.replace(/['',]/g, ''));
-            data.append('address', formData.direccion || 'Ver enlace de Google Maps adjunto');
+            data.append('address', propertyAddress(formData.direccion));
             data.append('description', formData.descripcion);
             
             // Map legacy state to modern status
@@ -266,7 +267,7 @@ export default function EditarInmueble() {
             data.append('in_complex', formData.en_conjunto ? 'true' : 'false');
             data.append('admin_included', formData.administracion_incluida ? 'true' : 'false');
             if (formData.valor_administracion) data.append('admin_value', formData.valor_administracion.replace(/['',]/g, ''));
-            if (formData.enlace_google_maps) data.append('google_maps_link', formData.enlace_google_maps);
+            data.append('google_maps_link', formData.enlace_google_maps.trim());
 
             // Imágenes eliminadas
             deletedImageIds.forEach(delId => {
