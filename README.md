@@ -1,4 +1,15 @@
-El frontend de Casas y Soluciones sirve para consultar inmuebles en arriendo y administrar la operación inmobiliaria desde una interfaz web.<br>
+# Casas y Soluciones | Property Management Web App
+
+Professional project. The Next.js and TypeScript application includes a property catalog and dashboards for properties, tickets, inventories and reports. My contributions included ticketing, property operations and Google Maps integration.
+
+[Backend](https://github.com/JulianOrtiz952/casasysoluciones-backend) · [Application routes](src/app/)
+
+## Local verification
+
+Run `npm run lint`, `npm run build` and `node --test tests/property-map.test.mjs`. Use a local API and synthetic property records when demonstrating the application.
+
+## Project guide
+
 Permite a administradores, asistentes, arrendatarios y técnicos gestionar propiedades, inventarios y reportes de daños según su rol.
 
 # Casas y Soluciones — Frontend
